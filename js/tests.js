@@ -720,21 +720,27 @@
       const page1 = await pdfDoc.getPage(1);
       const textContent = await page1.getTextContent();
 
-      // Y 좌표 기준 줄바꿈 재구성
+      // Y 좌표(상단->하단: transform[5] 내림차순), X 좌표(좌->우: transform[4] 오름차순) 정렬
+      const items = [...textContent.items].sort((a, b) => {
+        const yDiff = b.transform[5] - a.transform[5];
+        if (Math.abs(yDiff) > 5) return yDiff;
+        return a.transform[4] - b.transform[4];
+      });
+
       let lastY = null;
       const lines = [];
       let currentLine = [];
 
-      for (const item of textContent.items) {
+      for (const item of items) {
         const y = Math.round(item.transform[5]);
-        if (lastY !== null && Math.abs(y - lastY) > 4) {
-          lines.push(currentLine.join("").trim());
+        if (lastY !== null && Math.abs(y - lastY) > 5) {
+          lines.push(currentLine.join(" ").trim());
           currentLine = [];
         }
         currentLine.push(item.str);
         lastY = y;
       }
-      if (currentLine.length > 0) lines.push(currentLine.join("").trim());
+      if (currentLine.length > 0) lines.push(currentLine.join(" ").trim());
 
       const fullText = lines.join("\n");
 
@@ -762,7 +768,7 @@
           else detectedGender = "남";
         }
 
-        const schoolMatch = fullText.match(/(?:소속|학교)\s*[:：]\s*([^\n\r·]+)/);
+        const schoolMatch = fullText.match(/(?:소속기관\s*\d*|소속|학교)\s*[:：]\s*([^\n\r·]+)/);
         const detectedSchool = schoolMatch ? schoolMatch[1].trim() : "";
 
         const birthMatch = fullText.match(/(?:생년월일)\s*[:：]\s*([0-9\.\-\/]+)/);
@@ -783,8 +789,9 @@
         // T점수 추출 (전체규준 T 줄 파싱)
         let tScores = [];
         for (let i = 0; i < lines.length; i++) {
-          if (lines[i].includes("전체규준 T") || lines[i].startsWith("전체규준 T")) {
-            const tokens = lines[i].replace("전체규준 T", "").trim().split(/\s+/);
+          const cleanLine = lines[i].replace(/\s+/g, " ");
+          if (/전\s*체\s*규\s*준\s*T/.test(cleanLine) || cleanLine.includes("전체규준 T")) {
+            const tokens = cleanLine.replace(/.*전\s*체\s*규\s*준\s*T/, "").replace(/.*전체규준 T/, "").trim().split(/\s+/);
             if (tokens.length >= 10) {
               tScores = tokens.map(t => parseFloat(t.replace(/[^0-9.]/g, "")) || 0);
               break;
@@ -836,10 +843,16 @@
         // 임상 소견 자동 생성
         const opinionTextarea = document.querySelector("#formNewTest textarea[name=summaryOpinion]");
         if (opinionTextarea) {
-          const kVal = subMap.K || 61;
-          const sVal = subMap.S || 66;
-          const fVal = subMap.F || 37;
-          opinionTextarea.value = `[마음사랑 MMPI-2 자동 판독] 타당도 척도(F=${fVal}, K=${kVal}, S=${sVal}) 수검 태도 신뢰로움. 10대 임상 척도 모두 T65 미만(최고 ${maxClinical}점)으로 현재 임상적 병리 징후 없는 안정 상태임. 원본 검사지(PDF) 보관 완료.`;
+          const kVal = subMap.K || 46;
+          const sVal = subMap.S || 49;
+          const fVal = subMap.F || 58;
+          let evalComment = `현재 임상적 병리 징후 없는 안정 상태임.`;
+          if (maxClinical >= 70) {
+            evalComment = `임상 척도(최고 T=${maxClinical}점) 유의한 상승 관찰되어 심층 상담 및 전문의 자문 개입 권고됨.`;
+          } else if (maxClinical >= 65) {
+            evalComment = `임상 척도(최고 T=${maxClinical}점) 경계선/주의 수준으로 지속적 모니터링 및 지지상담 필요함.`;
+          }
+          opinionTextarea.value = `[마음사랑 MMPI 자동 판독] 타당도 척도(F=${fVal}, K=${kVal}, S=${sVal}) 수검 태도 신뢰로움. ${evalComment} 원본 검사지(PDF) 보관 완료.`;
         }
 
         // 대상 학생 매핑 또는 신규 학생 자동 생성 모드 세팅
