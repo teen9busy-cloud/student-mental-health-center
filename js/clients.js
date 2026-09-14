@@ -917,10 +917,31 @@
     if (searchInput) {
       searchInput.addEventListener("input", () => {
         clearTimeout(window._searchTimer);
-        window._searchTimer = setTimeout(renderClientsList, 300);
+        window._searchTimer = setTimeout(renderClientsList, 200);
+      });
+      searchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          clearTimeout(window._searchTimer);
+          renderClientsList();
+        }
       });
     }
   });
+
+  // 학생 필터 및 검색어 초기화 함수
+  window.resetClientFilters = function() {
+    if (document.getElementById("filterCenter")) document.getElementById("filterCenter").value = "all";
+    if (document.getElementById("filterRegion")) document.getElementById("filterRegion").value = "all";
+    if (document.getElementById("filterRisk")) document.getElementById("filterRisk").value = "all";
+    if (document.getElementById("filterSchool")) document.getElementById("filterSchool").value = "all";
+    const kwInput = document.getElementById("searchClientKeyword");
+    if (kwInput) {
+      kwInput.value = "";
+      kwInput.focus();
+    }
+    renderClientsList();
+  };
 
   // 원본 검사지(PDF) 새 탭/뷰어 열람
   window.viewTestPdf = async function(testId) {

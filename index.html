@@ -243,8 +243,9 @@
             </select>
           </div>
 
-          <div class="filter-group" style="flex:1;min-width:200px">
-            <input type="text" id="searchClientKeyword" class="input-control" style="width:100%" placeholder="학생이름, 식별코드, 학교명, 호소문제 검색...">
+          <div class="filter-group" style="flex:1;min-width:220px;display:flex;gap:6px;align-items:center">
+            <input type="text" id="searchClientKeyword" class="input-control" style="flex:1" placeholder="학생이름, 식별코드, 학교명, 호소문제 검색...">
+            <button type="button" id="btnResetClientFilters" class="btn btn-outline btn-sm" title="필터 및 검색어 전체 초기화" style="white-space:nowrap;padding:8px 10px;font-size:12.5px" onclick="window.resetClientFilters()">🔄 초기화</button>
           </div>
 
           <div>
