@@ -237,13 +237,200 @@
     }
   }
 
-  // 학생 명단 CSV 템플릿 다운로드
-  function downloadStudentSampleTemplate() {
+  // 엑셀 셀 텍스트 안전 추출 헬퍼
+  function getExcelCellText(cell) {
+    if (!cell || cell.value === null || cell.value === undefined) return "";
+    const v = cell.value;
+    if (v instanceof Date) return v.toISOString().split("T")[0];
+    if (typeof v === "object") {
+      if (v.result !== undefined) return String(v.result).trim();
+      if (v.text !== undefined) return String(v.text).trim();
+      if (Array.isArray(v.richText)) return v.richText.map(t => t.text).join("").trim();
+    }
+    return String(v).trim();
+  }
+
+  // 시군 명칭 -> region_id 변환 헬퍼
+  function normalizeRegionId(raw, defaultCenter) {
+    if (!raw) return defaultCenter === "changwon" ? "changwon" : "jinju";
+    const str = String(raw).trim();
+    const found = window.APP_CONFIG.regions.find(r => 
+      r.id === str.toLowerCase() || 
+      r.name === str || 
+      str.includes(r.name.replace("시", "").replace("군", ""))
+    );
+    return found ? found.id : (defaultCenter === "changwon" ? "changwon" : "jinju");
+  }
+
+  // 위기도 명칭 -> DB 코드 변환 헬퍼
+  function normalizeRiskLevel(raw) {
+    if (!raw) return "MODERATE";
+    const str = String(raw).toUpperCase();
+    if (str.includes("고위험") || str.includes("위기") || str.includes("SEVERE")) return "SEVERE";
+    if (str.includes("주의") || str.includes("우선") || str.includes("MODERATE")) return "MODERATE";
+    if (str.includes("관심") || str.includes("MILD")) return "MILD";
+    if (str.includes("일반") || str.includes("NORMAL")) return "NORMAL";
+    return "MODERATE";
+  }
+
+  // 학생 명단 엑셀(.xlsx) 템플릿 다운로드 (드롭다운 데이터 유효성 검사 내장)
+  async function downloadStudentSampleTemplate() {
+    if (window.ExcelJS) {
+      try {
+        const wb = new window.ExcelJS.Workbook();
+        wb.creator = "경상남도교육청 학생정신건강 전담센터";
+        wb.created = new Date();
+
+        const ws = wb.addWorksheet("학생등록양식");
+        ws.views = [{ showGridLines: true }];
+
+        ws.columns = [
+          { header: "이름*", key: "name", width: 14 },
+          { header: "성별*", key: "gender", width: 10 },
+          { header: "생년월일", key: "birth_date", width: 15 },
+          { header: "소속센터*", key: "center", width: 22 },
+          { header: "소속시군*", key: "region", width: 14 },
+          { header: "학교급*", key: "school_level", width: 14 },
+          { header: "학교명*", key: "school_name", width: 20 },
+          { header: "학년", key: "grade", width: 10 },
+          { header: "반", key: "class_room", width: 10 },
+          { header: "보호자관계", key: "parent_relation", width: 12 },
+          { header: "보호자연락처", key: "parent_contact", width: 16 },
+          { header: "의뢰경로*", key: "referral_source", width: 24 },
+          { header: "주호소문제*", key: "main_concern", width: 26 },
+          { header: "초기위기도*", key: "risk_level", width: 20 },
+          { header: "특이사항 및 접수메모", key: "notes", width: 34 }
+        ];
+
+        // 1. 헤더 스타일링
+        const headerRow = ws.getRow(1);
+        headerRow.height = 30;
+        headerRow.eachCell((cell) => {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFE0E7FF" }
+          };
+          cell.font = {
+            name: "맑은 고딕",
+            size: 11,
+            bold: true,
+            color: { argb: "FF1E3A8A" }
+          };
+          cell.alignment = { vertical: "middle", horizontal: "center" };
+          cell.border = {
+            top: { style: "thin", color: { argb: "FF93C5FD" } },
+            left: { style: "thin", color: { argb: "FF93C5FD" } },
+            bottom: { style: "medium", color: { argb: "FF2563EB" } },
+            right: { style: "thin", color: { argb: "FF93C5FD" } }
+          };
+        });
+
+        // 2. 참조 코드 목록 시트 생성 (엑셀 드롭다운 목록 소스)
+        const refWs = wb.addWorksheet("참조코드목록");
+        const genders = ["남", "여"];
+        const centers = ["진주센터(서부경남)", "창원센터(동부경남)"];
+        const regions = [
+          "진주시", "창원시", "통영시", "사천시", "김해시", "밀양시", "거제시", "양산시",
+          "의령군", "함안군", "창녕군", "고성군", "남해군", "하동군", "산청군", "함양군", "거창군", "합천군"
+        ];
+        const schoolLevels = ["초등학교", "중학교", "고등학교", "특수학교"];
+        const grades = ["1학년", "2학년", "3학년", "4학년", "5학년", "6학년"];
+        const relations = ["모", "부", "조모", "조부", "기타"];
+        const referralSources = [
+          "Wee클래스(학교)", "Wee센터(교육지원청)", "담임교사", "학부모 직접의뢰", "병원 소아청소년과 연계"
+        ];
+        const concerns = [
+          "우울/무기력", "불안/공황/사회불안", "자해/자살위기", "학교폭력/대인관계 갈등",
+          "주의집중(ADHD)/충동성", "품행문제/등교거부", "학업 및 진로 스트레스"
+        ];
+        const risks = ["일반군", "관심군", "주의군(우선관리)", "고위험군(위기관리)"];
+
+        refWs.getCell("A1").value = "성별";
+        genders.forEach((v, i) => refWs.getCell(`A${i + 2}`).value = v);
+
+        refWs.getCell("B1").value = "소속센터";
+        centers.forEach((v, i) => refWs.getCell(`B${i + 2}`).value = v);
+
+        refWs.getCell("C1").value = "소속시군";
+        regions.forEach((v, i) => refWs.getCell(`C${i + 2}`).value = v);
+
+        refWs.getCell("D1").value = "학교급";
+        schoolLevels.forEach((v, i) => refWs.getCell(`D${i + 2}`).value = v);
+
+        refWs.getCell("E1").value = "학년";
+        grades.forEach((v, i) => refWs.getCell(`E${i + 2}`).value = v);
+
+        refWs.getCell("F1").value = "보호자관계";
+        relations.forEach((v, i) => refWs.getCell(`F${i + 2}`).value = v);
+
+        refWs.getCell("G1").value = "의뢰경로";
+        referralSources.forEach((v, i) => refWs.getCell(`G${i + 2}`).value = v);
+
+        refWs.getCell("H1").value = "주호소문제";
+        concerns.forEach((v, i) => refWs.getCell(`H${i + 2}`).value = v);
+
+        refWs.getCell("I1").value = "초기위기도";
+        risks.forEach((v, i) => refWs.getCell(`I${i + 2}`).value = v);
+
+        // 3. 샘플 행 4개 추가
+        const samples = [
+          ["홍길동", "남", "2010-05-12", "진주센터(서부경남)", "진주시", "중학교", "진주중학교", "3학년", "1반", "모", "010-1234-5678", "Wee클래스(학교)", "우울/무기력", "주의군(우선관리)", "교우관계 위축 및 학업 스트레스 호소"],
+          ["성춘향", "여", "2009-08-20", "창원센터(동부경남)", "창원시", "고등학교", "창원용호고등학교", "2학년", "4반", "부", "010-2345-6789", "담임교사", "불안/공황/사회불안", "관심군", "발표 시 과호흡 및 시험 불안"],
+          ["이몽룡", "남", "2008-03-15", "진주센터(서부경남)", "사천시", "고등학교", "사천삼천포고등학교", "3학년", "2반", "모", "010-3456-7890", "병원 소아청소년과 연계", "자해/자살위기", "고위험군(위기관리)", "손목 부위 자해 흔적 및 외래 진료 의뢰"],
+          ["심청", "여", "2014-11-03", "창원센터(동부경남)", "김해시", "초등학교", "김해율하초등학교", "6학년", "3반", "부", "010-4567-8901", "학부모 직접의뢰", "주의집중(ADHD)/충동성", "주의군(우선관리)", "수업 중 산만 및 충동 조절 지도 필요"]
+        ];
+
+        samples.forEach((row, idx) => {
+          const r = ws.addRow(row);
+          r.height = 23;
+          r.eachCell((cell) => {
+            cell.font = { name: "맑은 고딕", size: 10 };
+            cell.alignment = { vertical: "middle", horizontal: "center" };
+            cell.border = {
+              top: { style: "thin", color: { argb: "FFE2E8F0" } },
+              left: { style: "thin", color: { argb: "FFE2E8F0" } },
+              bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
+              right: { style: "thin", color: { argb: "FFE2E8F0" } }
+            };
+          });
+          ws.getCell(`G${idx + 2}`).alignment = { vertical: "middle", horizontal: "left" };
+          ws.getCell(`O${idx + 2}`).alignment = { vertical: "middle", horizontal: "left" };
+        });
+
+        // 4. 드롭다운 데이터 유효성 검사 적용 (행 2 ~ 500)
+        for (let r = 2; r <= 500; r++) {
+          ws.getCell(`B${r}`).dataValidation = { type: "list", allowBlank: true, formulae: [`'참조코드목록'!$A$2:$A$${genders.length + 1}`] };
+          ws.getCell(`D${r}`).dataValidation = { type: "list", allowBlank: true, formulae: [`'참조코드목록'!$B$2:$B$${centers.length + 1}`] };
+          ws.getCell(`E${r}`).dataValidation = { type: "list", allowBlank: true, formulae: [`'참조코드목록'!$C$2:$C$${regions.length + 1}`] };
+          ws.getCell(`F${r}`).dataValidation = { type: "list", allowBlank: true, formulae: [`'참조코드목록'!$D$2:$D$${schoolLevels.length + 1}`] };
+          ws.getCell(`H${r}`).dataValidation = { type: "list", allowBlank: true, formulae: [`'참조코드목록'!$E$2:$E$${grades.length + 1}`] };
+          ws.getCell(`J${r}`).dataValidation = { type: "list", allowBlank: true, formulae: [`'참조코드목록'!$F$2:$F$${relations.length + 1}`] };
+          ws.getCell(`L${r}`).dataValidation = { type: "list", allowBlank: true, formulae: [`'참조코드목록'!$G$2:$G$${referralSources.length + 1}`] };
+          ws.getCell(`M${r}`).dataValidation = { type: "list", allowBlank: true, formulae: [`'참조코드목록'!$H$2:$H$${concerns.length + 1}`] };
+          ws.getCell(`N${r}`).dataValidation = { type: "list", allowBlank: true, formulae: [`'참조코드목록'!$I$2:$I$${risks.length + 1}`] };
+        }
+
+        const buffer = await wb.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "경남_학생정신건강전담센터_학생명단_일괄등록_양식.xlsx";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.UI.showToast("드롭다운 선택이 포함된 엑셀(XLSX) 양식이 다운로드되었습니다.", "success");
+        return;
+      } catch (err) {
+        console.error("ExcelJS export error:", err);
+      }
+    }
+
+    // CSV Fallback
     const csvContent = "\uFEFF이름,성별,생년월일,소속센터,소속시군,학교급,학교명,학년,반,보호자관계,보호자연락처,의뢰경로,주호소문제,초기위기도,특이사항\n" +
-      "홍길동,남,2010-05-12,jinju,jinju,중학교,진주중학교,3,1반,모,010-1234-5678,Wee클래스(학교),우울/무기력,MODERATE,교우관계 위축 및 학업 스트레스 호소\n" +
-      "성춘향,여,2009-08-20,changwon,changwon,고등학교,창원용호고등학교,2,4반,부,010-2345-6789,담임교사,불안/공황/사회불안,MILD,발표 시 과호흡 및 시험 불안\n" +
-      "이몽룡,남,2008-03-15,jinju,sacheon,고등학교,사천삼천포고등학교,3,2반,모,010-3456-7890,병원 소아청소년과 연계,자해/자살위기,SEVERE,손목 부위 자해 흔적 및 외래 진료 의뢰\n" +
-      "심청,여,2014-11-03,changwon,gimhae,초등학교,김해율하초등학교,6,3반,부,010-4567-8901,학부모 직접의뢰,주의집중(ADHD)/충동성,MODERATE,수업 중 산만 및 충동 조절 지도 필요\n";
+      "홍길동,남,2010-05-12,진주센터(서부경남),진주시,중학교,진주중학교,3,1반,모,010-1234-5678,Wee클래스(학교),우울/무기력,주의군(우선관리),교우관계 위축 및 학업 스트레스 호소\n" +
+      "성춘향,여,2009-08-20,창원센터(동부경남),창원시,고등학교,창원용호고등학교,2,4반,부,010-2345-6789,담임교사,불안/공황/사회불안,관심군,발표 시 과호흡 및 시험 불안\n";
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -253,15 +440,104 @@
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    window.UI.showToast("학생 명단 일괄 등록 양식(CSV)이 다운로드되었습니다.", "info");
+    window.UI.showToast("학생 명단 등록 양식(CSV)이 다운로드되었습니다.", "info");
   }
 
   // 학생 엑셀/CSV 파서
   let parsedBatchStudents = [];
 
-  function handleStudentFileUpload(file) {
+  async function handleStudentFileUpload(file) {
     if (!file) return;
+    parsedBatchStudents = [];
 
+    const isXlsx = file.name.endsWith(".xlsx") || file.name.endsWith(".xls") || file.type.includes("sheet");
+
+    // 1. XLSX 형식 파일 파싱 (ExcelJS 사용)
+    if (isXlsx && window.ExcelJS) {
+      try {
+        const buffer = await file.arrayBuffer();
+        const wb = new window.ExcelJS.Workbook();
+        await wb.xlsx.load(buffer);
+        const ws = wb.getWorksheet("학생등록양식") || wb.worksheets[0];
+
+        ws.eachRow((row, rowNum) => {
+          if (rowNum === 1) return; // 헤더 제외
+
+          const name = getExcelCellText(row.getCell(1));
+          if (!name) return;
+
+          const genderRaw = getExcelCellText(row.getCell(2));
+          const gender = genderRaw.includes("여") ? "여" : "남";
+
+          let birthDate = getExcelCellText(row.getCell(3));
+          if (birthDate) {
+            birthDate = birthDate.replace(/[^0-9-]/g, "").slice(0, 10);
+            if (birthDate.length < 8) birthDate = null;
+          } else {
+            birthDate = null;
+          }
+
+          const centerRaw = getExcelCellText(row.getCell(4));
+          const centerId = centerRaw.includes("창원") || centerRaw.toLowerCase().includes("changwon") ? "changwon" : "jinju";
+
+          const regionRaw = getExcelCellText(row.getCell(5));
+          const regionId = normalizeRegionId(regionRaw, centerId);
+
+          const schoolLevelRaw = getExcelCellText(row.getCell(6)) || "중학교";
+          const schoolLevel = schoolLevelRaw.includes("초등") ? "초등학교" :
+                              schoolLevelRaw.includes("고등") ? "고등학교" :
+                              schoolLevelRaw.includes("특수") ? "특수학교" : "중학교";
+
+          const schoolName = getExcelCellText(row.getCell(7));
+          if (!schoolName) return;
+
+          const gradeRaw = getExcelCellText(row.getCell(8));
+          const gradeMatch = String(gradeRaw).match(/\d+/);
+          const grade = gradeMatch ? parseInt(gradeMatch[0], 10) : 1;
+
+          const classRoom = getExcelCellText(row.getCell(9));
+          const parentRelation = getExcelCellText(row.getCell(10)) || "모";
+          const parentContact = getExcelCellText(row.getCell(11));
+          const referralSource = getExcelCellText(row.getCell(12)) || "Wee클래스(학교)";
+          const mainConcern = getExcelCellText(row.getCell(13)) || "우울/무기력";
+          const riskLevel = normalizeRiskLevel(getExcelCellText(row.getCell(14)));
+          const notes = getExcelCellText(row.getCell(15));
+
+          parsedBatchStudents.push({
+            name,
+            gender,
+            birth_date: birthDate,
+            center_id: centerId,
+            region_id: regionId,
+            school_level: schoolLevel,
+            school_name: schoolName,
+            grade,
+            class_room: classRoom,
+            parent_relation: parentRelation,
+            parent_contact: parentContact,
+            referral_source: referralSource,
+            main_concern: mainConcern,
+            risk_level: riskLevel,
+            assigned_worker: "이민호 사회복지사",
+            assigned_psych: "박서연 임상심리사",
+            notes
+          });
+        });
+
+        if (parsedBatchStudents.length === 0) {
+          window.UI.showToast("엑셀 파일에서 등록 가능한 학생 데이터를 찾을 수 없습니다.", "warn");
+          return;
+        }
+
+        renderStudentUploadPreview(parsedBatchStudents);
+        return;
+      } catch (err) {
+        console.error("XLSX parsing failed:", err);
+        window.UI.showToast("엑셀 파일 분석 중 오류가 발생했습니다.", "error");
+      }
+    }
+
+    // 2. CSV 형식 파일 파싱 (하위 호환)
     const reader = new FileReader();
     reader.onload = async function(e) {
       const text = e.target.result;
@@ -278,19 +554,24 @@
         if (row.length < 5) continue;
 
         const name = row[0];
-        const gender = row[1] || "남";
+        const gender = row[1] ? (row[1].includes("여") ? "여" : "남") : "남";
         const birthDate = row[2] || null;
-        const centerId = row[3] || "jinju";
-        const regionId = row[4] || "jinju";
-        const schoolLevel = row[5] || "중학교";
+        const centerRaw = row[3] || "jinju";
+        const centerId = centerRaw.includes("창원") || centerRaw.toLowerCase().includes("changwon") ? "changwon" : "jinju";
+        const regionId = normalizeRegionId(row[4], centerId);
+        const schoolLevelRaw = row[5] || "중학교";
+        const schoolLevel = schoolLevelRaw.includes("초등") ? "초등학교" :
+                            schoolLevelRaw.includes("고등") ? "고등학교" :
+                            schoolLevelRaw.includes("특수") ? "특수학교" : "중학교";
         const schoolName = row[6] || "";
-        const grade = parseInt(row[7], 10) || 1;
+        const gradeMatch = String(row[7] || "1").match(/\d+/);
+        const grade = gradeMatch ? parseInt(gradeMatch[0], 10) : 1;
         const classRoom = row[8] || "";
         const parentRelation = row[9] || "부모";
         const parentContact = row[10] || "";
         const referralSource = row[11] || "Wee클래스(학교)";
         const mainConcern = row[12] || "우울/무기력";
-        const riskLevel = row[13] || "MODERATE";
+        const riskLevel = normalizeRiskLevel(row[13]);
         const notes = row[14] || "";
 
         if (!name || !schoolName) continue;

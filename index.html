@@ -766,9 +766,9 @@
         </div>
 
         <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:13px;color:var(--text-sub)">표준 양식: 학생식별코드, 이름, 검사종류, 실시일자, 총점, T점수, 실시자, 소견</span>
+          <span style="font-size:13px;color:var(--text-sub)">표준 양식: 검사종류(AMPQ-II, BDI-II, RCMAS 등)는 엑셀 드롭다운 목록에서 바로 선택하실 수 있습니다.</span>
           <button type="button" id="btnDownloadTemplate" class="btn btn-outline btn-sm">
-            📥 표준 CSV 템플릿 양식 받기
+            📥 표준 엑셀(XLSX) 템플릿 받기 (드롭다운 지원)
           </button>
         </div>
 
@@ -819,14 +819,14 @@
         <div id="studentFileDropzone" class="dropzone">
           <div class="dropzone-icon">👥</div>
           <p><strong>학생 명단 엑셀/CSV 파일을 이곳에 끌어다 놓으세요</strong></p>
-          <div class="subtext">또는 클릭하여 파일 선택 (.csv, .xlsx)</div>
-          <input type="file" id="studentFileInput" accept=".csv, .xlsx" style="display:none">
+          <div class="subtext">또는 클릭하여 파일 선택 (.xlsx, .csv)</div>
+          <input type="file" id="studentFileInput" accept=".xlsx, .csv" style="display:none">
         </div>
 
         <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:13px;color:var(--text-sub)">표준 양식: 이름, 성별, 생년월일, 소속센터, 소속시군, 학교급, 학교명, 학년, 반, 보호자관계, 보호자연락처, 의뢰경로, 주호소문제, 초기위기도</span>
+          <span style="font-size:13px;color:var(--text-sub)">표준 양식: 성별, 소속센터, 소속시군, 학교급, 학년, 의뢰경로, 주호소문제, 초기위기도는 <strong>엑셀 드롭다운 목록</strong>에서 선택 가능합니다.</span>
           <button type="button" id="btnDownloadStudentTemplate" class="btn btn-outline btn-sm">
-            📥 학생 일괄등록 표준 템플릿(CSV) 받기
+            📥 표준 엑셀(XLSX) 템플릿 받기 (드롭다운 지원)
           </button>
         </div>
 
@@ -998,6 +998,10 @@
     </div>
   </div>
 
+
+  <!-- ExcelJS 라이브러리 (XLSX 드롭다운 유효성검사 & 파서) -->
+  <script src="js/exceljs.min.js"></script>
+  <script>if (!window.ExcelJS) document.write('<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"><\/script>');</script>
 
   <!-- JS Modules 순서대로 로드 -->
   <script src="js/config.js"></script>
