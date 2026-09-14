@@ -59,7 +59,8 @@ CREATE TABLE IF NOT EXISTS smhc_clients (
     assigned_psych VARCHAR(50),
     notes TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
 );
 
 -- 5. 심리검사 레코드 (Psychological Tests)
@@ -78,7 +79,8 @@ CREATE TABLE IF NOT EXISTS smhc_psych_tests (
     subscale_scores JSONB DEFAULT '{}'::jsonb,
     file_name VARCHAR(255),
     summary_opinion TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
 );
 
 -- 6. 모니터링 및 상담 일지 (Monitoring & Case Notes)
@@ -96,7 +98,8 @@ CREATE TABLE IF NOT EXISTS smhc_monitoring_logs (
     intervention_details TEXT,
     doctor_opinion TEXT,
     next_schedule DATE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
 );
 
 -- RLS (Row Level Security) 설정 (데모 시연을 위해 anon 사용자 읽기/쓰기 허용)
