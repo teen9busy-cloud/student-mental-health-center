@@ -54,8 +54,18 @@
     e.preventDefault();
     const form = e.target;
     const studentSelect = form.studentSelect;
-    const studentId = studentSelect.value;
-    const studentName = studentSelect.options[studentSelect.selectedIndex].dataset.name;
+    const studentId = studentSelect ? studentSelect.value : "";
+
+    if (!studentId) {
+      window.UI.showToast("대상 학생을 검색창에서 찾아 선택해 주세요.", "warn");
+      return;
+    }
+
+    let studentName = studentSelect.dataset ? studentSelect.dataset.name : "";
+    if (!studentName) {
+      const client = await window.DB.getClientById(studentId);
+      if (client) studentName = client.name;
+    }
 
     const logRecord = {
       client_id: studentId,
@@ -72,8 +82,8 @@
       next_schedule: form.nextSchedule.value || null
     };
 
-    if (!logRecord.client_id || !logRecord.session_summary) {
-      window.UI.showToast("대상 학생과 상담 요약을 입력해 주세요.", "warn");
+    if (!logRecord.session_summary) {
+      window.UI.showToast("상담 요약을 입력해 주세요.", "warn");
       return;
     }
 
@@ -81,6 +91,7 @@
       await window.DB.addMonitoringLog(logRecord);
       window.UI.showToast(`[${studentName}] 모니터링 일지가 성공적으로 등록되었습니다.`, "success");
       form.reset();
+      if (window.clearSelectedLogStudent) window.clearSelectedLogStudent();
       window.UI.closeModal("modalNewMonitoring");
       renderMonitoringView();
       if (window.renderDashboard) window.renderDashboard();

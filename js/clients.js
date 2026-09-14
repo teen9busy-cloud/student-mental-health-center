@@ -237,27 +237,275 @@
     }
   }
 
+  // 학생 명단 CSV 템플릿 다운로드
+  function downloadStudentSampleTemplate() {
+    const csvContent = "\uFEFF이름,성별,생년월일,소속센터,소속시군,학교급,학교명,학년,반,보호자관계,보호자연락처,의뢰경로,주호소문제,초기위기도,특이사항\n" +
+      "홍길동,남,2010-05-12,jinju,jinju,중학교,진주중학교,3,1반,모,010-1234-5678,Wee클래스(학교),우울/무기력,MODERATE,교우관계 위축 및 학업 스트레스 호소\n" +
+      "성춘향,여,2009-08-20,changwon,changwon,고등학교,창원용호고등학교,2,4반,부,010-2345-6789,담임교사,불안/공황/사회불안,MILD,발표 시 과호흡 및 시험 불안\n" +
+      "이몽룡,남,2008-03-15,jinju,sacheon,고등학교,사천삼천포고등학교,3,2반,모,010-3456-7890,병원 소아청소년과 연계,자해/자살위기,SEVERE,손목 부위 자해 흔적 및 외래 진료 의뢰\n" +
+      "심청,여,2014-11-03,changwon,gimhae,초등학교,김해율하초등학교,6,3반,부,010-4567-8901,학부모 직접의뢰,주의집중(ADHD)/충동성,MODERATE,수업 중 산만 및 충동 조절 지도 필요\n";
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "경남_학생정신건강전담센터_학생명단_일괄등록_양식.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.UI.showToast("학생 명단 일괄 등록 양식(CSV)이 다운로드되었습니다.", "info");
+  }
+
+  // 학생 엑셀/CSV 파서
+  let parsedBatchStudents = [];
+
+  function handleStudentFileUpload(file) {
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      const text = e.target.result;
+      const lines = text.split(/\r?\n/).filter(line => line.trim() !== "");
+      if (lines.length < 2) {
+        window.UI.showToast("파일에 유효한 학생 데이터가 없습니다.", "warn");
+        return;
+      }
+
+      parsedBatchStudents = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(",").map(c => c.trim().replace(/^"|"$/g, ''));
+        if (row.length < 5) continue;
+
+        const name = row[0];
+        const gender = row[1] || "남";
+        const birthDate = row[2] || null;
+        const centerId = row[3] || "jinju";
+        const regionId = row[4] || "jinju";
+        const schoolLevel = row[5] || "중학교";
+        const schoolName = row[6] || "";
+        const grade = parseInt(row[7], 10) || 1;
+        const classRoom = row[8] || "";
+        const parentRelation = row[9] || "부모";
+        const parentContact = row[10] || "";
+        const referralSource = row[11] || "Wee클래스(학교)";
+        const mainConcern = row[12] || "우울/무기력";
+        const riskLevel = row[13] || "MODERATE";
+        const notes = row[14] || "";
+
+        if (!name || !schoolName) continue;
+
+        parsedBatchStudents.push({
+          name,
+          gender,
+          birth_date: birthDate,
+          center_id: centerId,
+          region_id: regionId,
+          school_level: schoolLevel,
+          school_name: schoolName,
+          grade,
+          class_room: classRoom,
+          parent_relation: parentRelation,
+          parent_contact: parentContact,
+          referral_source: referralSource,
+          main_concern: mainConcern,
+          risk_level: riskLevel,
+          assigned_worker: "이민호 사회복지사",
+          assigned_psych: "박서연 임상심리사",
+          notes
+        });
+      }
+
+      renderStudentUploadPreview(parsedBatchStudents);
+    };
+    reader.readAsText(file, "utf-8");
+  }
+
+  // 학생 명단 업로드 미리보기 렌더링
+  function renderStudentUploadPreview(data) {
+    const container = document.getElementById("uploadStudentPreviewContainer");
+    const tbody = document.getElementById("uploadStudentPreviewTbody");
+    const countEl = document.getElementById("uploadStudentCount");
+    const saveBtn = document.getElementById("btnConfirmBatchStudentUpload");
+    if (!container || !tbody) return;
+
+    container.style.display = "block";
+    if (countEl) countEl.textContent = data.length;
+    if (saveBtn) saveBtn.disabled = data.length === 0;
+
+    tbody.innerHTML = data.map((s, idx) => {
+      const reg = window.APP_CONFIG.regions.find(r => r.id === s.region_id);
+      const regName = reg ? reg.name : s.region_id;
+      const centerName = s.center_id === "jinju" ? "진주" : "창원";
+      const riskBadge = window.UI.renderRiskBadge(s.risk_level);
+
+      return `
+        <tr>
+          <td>${idx + 1}</td>
+          <td><strong>${s.name}</strong> (${s.gender})</td>
+          <td>${s.school_name} (${s.grade}학년)</td>
+          <td>${regName} / ${centerName}</td>
+          <td><span style="font-size:12.5px;background:#f1f5f9;padding:2px 6px;border-radius:4px">${s.main_concern}</span></td>
+          <td>${s.referral_source}</td>
+          <td>${riskBadge}</td>
+        </tr>
+      `;
+    }).join("");
+
+    window.UI.showToast(`${data.length}명의 학생 명단이 분석되었습니다. 검토 후 저장해 주세요.`, "success");
+  }
+
+  // 학생 일괄 저장 확정
+  async function confirmBatchStudentUpload() {
+    if (parsedBatchStudents.length === 0) return;
+
+    try {
+      let successCount = 0;
+      for (const s of parsedBatchStudents) {
+        await window.DB.addClient(s);
+        successCount++;
+      }
+      window.UI.showToast(`${successCount}명의 학생이 수파베이스 DB에 성공적으로 일괄 등록되었습니다!`, "success");
+      parsedBatchStudents = [];
+      window.UI.closeModal("modalUploadStudents");
+      renderClientsList();
+      if (window.renderDashboard) window.renderDashboard();
+    } catch(err) {
+      console.error(err);
+      window.UI.showToast("학생 일괄 등록 중 오류가 발생했습니다.", "error");
+    }
+  }
+
+  // 공통 학생 검색 자동완성 셋업 함수
+  function setupStudentAutocomplete(searchInputId, dropdownId, cardId, cardTextId, hiddenInputId) {
+    const searchInput = document.getElementById(searchInputId);
+    const dropdown = document.getElementById(dropdownId);
+    const card = document.getElementById(cardId);
+    const cardText = document.getElementById(cardTextId);
+    const hiddenInput = document.getElementById(hiddenInputId);
+
+    if (!searchInput || !dropdown) return;
+
+    searchInput.addEventListener("input", async () => {
+      const kw = searchInput.value.trim().toLowerCase();
+      if (!kw) {
+        dropdown.style.display = "none";
+        return;
+      }
+
+      const allStudents = await window.DB.getClients();
+      const matches = allStudents.filter(s =>
+        (s.name && s.name.toLowerCase().includes(kw)) ||
+        (s.client_code && s.client_code.toLowerCase().includes(kw)) ||
+        (s.school_name && s.school_name.toLowerCase().includes(kw))
+      ).slice(0, 8);
+
+      if (matches.length === 0) {
+        dropdown.innerHTML = `<div style="padding:12px;color:var(--text-sub);text-align:center;font-size:13px">일치하는 학생이 없습니다.</div>`;
+        dropdown.style.display = "block";
+        return;
+      }
+
+      dropdown.innerHTML = matches.map(s => {
+        const riskBadge = window.UI.renderRiskBadge(s.risk_level);
+        return `
+          <div class="search-dropdown-item" data-id="${s.id}" data-name="${s.name}" data-code="${s.client_code}" data-school="${s.school_name}" data-risk="${s.risk_level}">
+            <div>
+              <strong>${s.name}</strong> (${s.gender}) - <span style="font-size:12.5px;color:var(--text-sub)">${s.school_name}</span>
+              <div style="font-size:11.5px;color:var(--primary)">${s.client_code} | ${s.main_concern}</div>
+            </div>
+            <div>${riskBadge}</div>
+          </div>
+        `;
+      }).join("");
+
+      dropdown.style.display = "block";
+
+      dropdown.querySelectorAll(".search-dropdown-item").forEach(item => {
+        item.addEventListener("click", () => {
+          const sid = item.dataset.id;
+          const sname = item.dataset.name;
+          const scode = item.dataset.code;
+          const sschool = item.dataset.school;
+
+          hiddenInput.value = sid;
+          hiddenInput.dataset.name = sname;
+          hiddenInput.dataset.code = scode;
+
+          cardText.innerHTML = `<strong>${sname}</strong> (${scode}) - ${sschool}`;
+          card.style.display = "inline-flex";
+          searchInput.style.display = "none";
+          dropdown.style.display = "none";
+          searchInput.value = "";
+        });
+      });
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.style.display = "none";
+      }
+    });
+  }
+
+  // 선택 취소 함수들
+  window.clearSelectedTestStudent = function() {
+    const hidden = document.getElementById("newTestStudentSelect");
+    const card = document.getElementById("newTestSelectedCard");
+    const search = document.getElementById("newTestStudentSearch");
+    if (hidden) { hidden.value = ""; delete hidden.dataset.name; delete hidden.dataset.code; }
+    if (card) card.style.display = "none";
+    if (search) { search.style.display = "block"; search.value = ""; search.focus(); }
+  };
+
+  window.clearSelectedLogStudent = function() {
+    const hidden = document.getElementById("newLogStudentSelect");
+    const card = document.getElementById("newLogSelectedCard");
+    const search = document.getElementById("newLogStudentSearch");
+    if (hidden) { hidden.value = ""; delete hidden.dataset.name; delete hidden.dataset.code; }
+    if (card) card.style.display = "none";
+    if (search) { search.style.display = "block"; search.value = ""; search.focus(); }
+  };
+
   // 상세 모달에서 바로 검사 추가 모달 열기
-  function openAddTestForCurrentStudent() {
+  async function openAddTestForCurrentStudent() {
     if (!selectedStudentId) return;
+    const student = await window.DB.getClientById(selectedStudentId);
     window.UI.closeModal("modalStudentDetail");
     window.UI.switchTab("tests");
     setTimeout(() => {
-      const select = document.getElementById("newTestStudentSelect");
-      if (select) select.value = selectedStudentId;
       window.UI.openModal("modalNewTest");
+      if (student) {
+        const hidden = document.getElementById("newTestStudentSelect");
+        const card = document.getElementById("newTestSelectedCard");
+        const cardText = document.getElementById("newTestSelectedText");
+        const search = document.getElementById("newTestStudentSearch");
+        if (hidden) { hidden.value = student.id; hidden.dataset.name = student.name; hidden.dataset.code = student.client_code; }
+        if (cardText) cardText.innerHTML = `<strong>${student.name}</strong> (${student.client_code}) - ${student.school_name}`;
+        if (card) card.style.display = "inline-flex";
+        if (search) search.style.display = "none";
+      }
     }, 200);
   }
 
   // 상세 모달에서 바로 모니터링 추가 모달 열기
-  function openAddLogForCurrentStudent() {
+  async function openAddLogForCurrentStudent() {
     if (!selectedStudentId) return;
+    const student = await window.DB.getClientById(selectedStudentId);
     window.UI.closeModal("modalStudentDetail");
     window.UI.switchTab("monitoring");
     setTimeout(() => {
-      const select = document.getElementById("newLogStudentSelect");
-      if (select) select.value = selectedStudentId;
       window.UI.openModal("modalNewMonitoring");
+      if (student) {
+        const hidden = document.getElementById("newLogStudentSelect");
+        const card = document.getElementById("newLogSelectedCard");
+        const cardText = document.getElementById("newLogSelectedText");
+        const search = document.getElementById("newLogStudentSearch");
+        if (hidden) { hidden.value = student.id; hidden.dataset.name = student.name; hidden.dataset.code = student.client_code; }
+        if (cardText) cardText.innerHTML = `<strong>${student.name}</strong> (${student.client_code}) - ${student.school_name}`;
+        if (card) card.style.display = "inline-flex";
+        if (search) search.style.display = "none";
+      }
     }, 200);
   }
 
@@ -267,6 +515,44 @@
     if (formNewStudent) {
       formNewStudent.addEventListener("submit", handleCreateStudent);
     }
+
+    // 학생 일괄등록 드롭존
+    const studentDropzone = document.getElementById("studentFileDropzone");
+    const studentFileInput = document.getElementById("studentFileInput");
+    const btnDownloadStuTpl = document.getElementById("btnDownloadStudentTemplate");
+    const btnConfirmStuUpload = document.getElementById("btnConfirmBatchStudentUpload");
+
+    if (studentDropzone && studentFileInput) {
+      studentDropzone.addEventListener("click", () => studentFileInput.click());
+      studentFileInput.addEventListener("change", (e) => {
+        if (e.target.files.length > 0) handleStudentFileUpload(e.target.files[0]);
+      });
+      studentDropzone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        studentDropzone.classList.add("dragover");
+      });
+      studentDropzone.addEventListener("dragleave", () => {
+        studentDropzone.classList.remove("dragover");
+      });
+      studentDropzone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        studentDropzone.classList.remove("dragover");
+        if (e.dataTransfer.files.length > 0) {
+          handleStudentFileUpload(e.dataTransfer.files[0]);
+        }
+      });
+    }
+
+    if (btnDownloadStuTpl) {
+      btnDownloadStuTpl.addEventListener("click", downloadStudentSampleTemplate);
+    }
+    if (btnConfirmStuUpload) {
+      btnConfirmStuUpload.addEventListener("click", confirmBatchStudentUpload);
+    }
+
+    // 학생 검색 자동완성 셋업 (검사 등록 모달 & 모니터링 모달)
+    setupStudentAutocomplete("newTestStudentSearch", "newTestSearchResults", "newTestSelectedCard", "newTestSelectedText", "newTestStudentSelect");
+    setupStudentAutocomplete("newLogStudentSearch", "newLogSearchResults", "newLogSelectedCard", "newLogSelectedText", "newLogStudentSelect");
 
     // 필터 변경 시 자동 조회
     ["filterCenter", "filterRegion", "filterRisk", "filterSchool"].forEach(id => {

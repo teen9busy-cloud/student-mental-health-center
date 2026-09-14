@@ -145,9 +145,22 @@
     e.preventDefault();
     const form = e.target;
     const studentSelect = form.studentSelect;
-    const studentId = studentSelect.value;
-    const studentName = studentSelect.options[studentSelect.selectedIndex].dataset.name;
-    const studentCode = studentSelect.options[studentSelect.selectedIndex].dataset.code;
+    const studentId = studentSelect ? studentSelect.value : "";
+    if (!studentId) {
+      window.UI.showToast("검사 대상 학생을 검색창에서 찾아 선택해 주세요.", "warning");
+      return;
+    }
+
+    let studentName = studentSelect.dataset ? studentSelect.dataset.name : "";
+    let studentCode = studentSelect.dataset ? studentSelect.dataset.code : "";
+
+    if (!studentName || !studentCode) {
+      const client = await window.DB.getClientById(studentId);
+      if (client) {
+        studentName = client.name;
+        studentCode = client.client_code || client.code;
+      }
+    }
 
     const testType = form.testType.value;
     const typeDef = window.APP_CONFIG.testTypes[testType];
@@ -184,6 +197,7 @@
       await window.DB.addTest(testRecord);
       window.UI.showToast(`[${studentName}] 심리검사 등록 및 수치화가 완료되었습니다.`, "success");
       form.reset();
+      if (window.clearSelectedTestStudent) window.clearSelectedTestStudent();
       window.UI.closeModal("modalNewTest");
       renderTestsView();
       if (window.renderDashboard) window.renderDashboard();

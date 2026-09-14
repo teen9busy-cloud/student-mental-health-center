@@ -194,7 +194,10 @@
             <div class="panel-title">👨‍🎓 학생(내담자) 등록 및 관리</div>
             <div class="panel-subtitle">경남 관할 시군구 초·중·고 학생 등록, 프로필 조회, 개인별 검사·상담 이력 관리</div>
           </div>
-          <div>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-outline" onclick="window.UI.openModal('modalUploadStudents')">
+              📂 학생 명단 엑셀 일괄 등록
+            </button>
             <button class="btn btn-primary" onclick="window.UI.openModal('modalNewStudent')">
               + 신규 학생 등록
             </button>
@@ -675,10 +678,16 @@
         <div class="modal-body">
           <div class="form-grid">
             <div class="form-field full-width">
-              <label>대상 학생 <span class="req">*</span></label>
-              <select name="studentSelect" id="newTestStudentSelect" class="input-control" required>
-                <!-- 동적 주입 -->
-              </select>
+              <label>대상 학생 검색 및 선택 <span class="req">*</span></label>
+              <div class="search-select-wrapper">
+                <input type="text" id="newTestStudentSearch" class="input-control" placeholder="🔍 학생 성명, 식별코드, 학교명으로 검색 (예: 김민준, STU-001, 진주중)..." autocomplete="off">
+                <div id="newTestSearchResults" class="search-dropdown-menu" style="display:none"></div>
+              </div>
+              <div id="newTestSelectedCard" class="selected-student-badge" style="display:none;margin-top:6px">
+                <span id="newTestSelectedText"></span>
+                <button type="button" class="btn-remove" onclick="window.clearSelectedTestStudent()" title="선택 취소">&times;</button>
+              </div>
+              <input type="hidden" name="studentSelect" id="newTestStudentSelect" required>
             </div>
 
             <div class="form-field full-width">
@@ -794,6 +803,65 @@
 
 
   <!-- ========================================================================
+       MODAL 4-2: 학생(내담자) 명단 엑셀/CSV 일괄 등록 모달
+       ======================================================================== -->
+  <div id="modalUploadStudents" class="modal-backdrop">
+    <div class="modal-dialog wide">
+      <div class="modal-header">
+        <div>
+          <h3>학생 명단 엑셀/CSV 일괄 등록</h3>
+          <div style="font-size:13px;color:var(--text-sub)">Wee클래스 또는 교육지원청에서 전달받은 학생 명단을 대량으로 일괄 등록합니다.</div>
+        </div>
+        <button class="modal-close" onclick="window.UI.closeModal('modalUploadStudents')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- 드롭존 -->
+        <div id="studentFileDropzone" class="dropzone">
+          <div class="dropzone-icon">👥</div>
+          <p><strong>학생 명단 엑셀/CSV 파일을 이곳에 끌어다 놓으세요</strong></p>
+          <div class="subtext">또는 클릭하여 파일 선택 (.csv, .xlsx)</div>
+          <input type="file" id="studentFileInput" accept=".csv, .xlsx" style="display:none">
+        </div>
+
+        <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px;color:var(--text-sub)">표준 양식: 이름, 성별, 생년월일, 소속센터, 소속시군, 학교급, 학교명, 학년, 반, 보호자관계, 보호자연락처, 의뢰경로, 주호소문제, 초기위기도</span>
+          <button type="button" id="btnDownloadStudentTemplate" class="btn btn-outline btn-sm">
+            📥 학생 일괄등록 표준 템플릿(CSV) 받기
+          </button>
+        </div>
+
+        <!-- 파싱된 데이터 미리보기 테이블 -->
+        <div id="uploadStudentPreviewContainer" style="display:none;margin-top:20px">
+          <h4 style="font-size:15px;margin-bottom:10px">🔎 등록 예정 학생 명단 미리보기 (<span id="uploadStudentCount">0</span>명)</h4>
+          <div class="table-responsive" style="max-height:260px;overflow-y:auto;border:1px solid var(--line);border-radius:6px">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>이름(성별)</th>
+                  <th>학교명(학년)</th>
+                  <th>지역/센터</th>
+                  <th>주 호소문제</th>
+                  <th>의뢰경로</th>
+                  <th>초기위기도</th>
+                </tr>
+              </thead>
+              <tbody id="uploadStudentPreviewTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="window.UI.closeModal('modalUploadStudents')">닫기</button>
+        <button type="button" id="btnConfirmBatchStudentUpload" class="btn btn-primary" disabled>
+          수파베이스 DB에 일괄 저장
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================================
        MODAL 5: 모니터링 상담 일지 작성 모달
        ======================================================================== -->
   <div id="modalNewMonitoring" class="modal-backdrop">
@@ -806,10 +874,16 @@
         <div class="modal-body">
           <div class="form-grid">
             <div class="form-field full-width">
-              <label>대상 학생 <span class="req">*</span></label>
-              <select name="studentSelect" id="newLogStudentSelect" class="input-control" required>
-                <!-- 동적 주입 -->
-              </select>
+              <label>대상 학생 검색 및 선택 <span class="req">*</span></label>
+              <div class="search-select-wrapper">
+                <input type="text" id="newLogStudentSearch" class="input-control" placeholder="🔍 학생 성명, 식별코드, 학교명으로 검색 (예: 김민준, STU-001, 진주중)..." autocomplete="off">
+                <div id="newLogSearchResults" class="search-dropdown-menu" style="display:none"></div>
+              </div>
+              <div id="newLogSelectedCard" class="selected-student-badge" style="display:none;margin-top:6px">
+                <span id="newLogSelectedText"></span>
+                <button type="button" class="btn-remove" onclick="window.clearSelectedLogStudent()" title="선택 취소">&times;</button>
+              </div>
+              <input type="hidden" name="studentSelect" id="newLogStudentSelect" required>
             </div>
 
             <div class="form-field">
