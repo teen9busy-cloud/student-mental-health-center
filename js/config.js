@@ -6,9 +6,9 @@ window.APP_CONFIG = {
   appName: "경남 학생정신건강 전담센터 통합관리 플랫폼",
   version: "1.0.0 (Demo)",
   
-  // Supabase 클라우드 설정 (새 프로젝트의 URL 및 Key를 설정하거나 브라우저 모달에서 입력)
+  // Supabase 클라우드 설정 (새로 생성된 student-mental-health 전용 프로젝트)
   supabase: {
-    url: localStorage.getItem("smhc_supabase_url") || "",
+    url: localStorage.getItem("smhc_supabase_url") || "https://ozgosuxpdzcbzyxkldwa.supabase.co",
     anonKey: localStorage.getItem("smhc_supabase_key") || ""
   },
 
