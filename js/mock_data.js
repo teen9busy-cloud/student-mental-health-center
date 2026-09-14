@@ -223,6 +223,28 @@ window.INITIAL_MOCK_DATA = {
       assigned_psych: "강동원 임상심리사",
       notes: "초기 우울 호소 있었으나 센터 5회기 모니터링 후 정서 안정화되어 종결 평가 단계.",
       created_at: "2026-08-02T14:00:00Z"
+    },
+    {
+      id: "stu-011",
+      client_code: "STU-2026-011",
+      center_id: "changwon",
+      region_id: "geoje",
+      name: "김상철",
+      gender: "남",
+      birth_date: "2008-04-20",
+      school_level: "고등학교",
+      school_name: "거제옥포고등학교",
+      grade: 2,
+      class_room: "3반",
+      parent_relation: "모",
+      parent_contact: "010-4820-9912",
+      referral_source: "Wee센터(교육지원청)",
+      main_concern: "학업 및 진로 스트레스",
+      risk_level: "NORMAL",
+      assigned_worker: "이민호 사회복지사",
+      assigned_psych: "박서연 임상심리사",
+      notes: "마음사랑 MMPI 다면적 인성검사 시연을 위한 가상 학생 등록 건.",
+      created_at: "2026-09-01T09:00:00Z"
     }
   ],
 

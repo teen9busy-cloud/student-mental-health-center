@@ -155,6 +155,60 @@ window.APP_CONFIG = {
         if (score >= 65) return { verdict: "ATTENTION", label: "준임상 범위 (65<=T<70)", riskLevel: "MODERATE" };
         return { verdict: "NORMAL", label: "정상 범위 (T<65)", riskLevel: "NORMAL" };
       }
+    },
+    MMPI_2: {
+      name: "마음사랑 다면적 인성검사 (MMPI-2)",
+      maxScore: 120,
+      unit: "T점수",
+      subscales: [
+        { key: "Hs", name: "1. 건강염려증 (Hs)", max: 120 },
+        { key: "D", name: "2. 우울증 (D)", max: 120 },
+        { key: "Hy", name: "3. 히스테리 (Hy)", max: 120 },
+        { key: "Pd", name: "4. 반사회성 (Pd)", max: 120 },
+        { key: "Mf", name: "5. 남성성-여성성 (Mf)", max: 120 },
+        { key: "Pa", name: "6. 편집증 (Pa)", max: 120 },
+        { key: "Pt", name: "7. 강박증/불안 (Pt)", max: 120 },
+        { key: "Sc", name: "8. 조현증 (Sc)", max: 120 },
+        { key: "Ma", name: "9. 경조증 (Ma)", max: 120 },
+        { key: "Si", name: "0. 사회적 내향성 (Si)", max: 120 }
+      ],
+      evaluate: function(score, subscales) {
+        let maxSub = score;
+        if (subscales) {
+          const vals = Object.values(subscales).map(v => parseFloat(v) || 0);
+          if (vals.length > 0) maxSub = Math.max(...vals);
+        }
+        if (maxSub >= 70) return { verdict: "HIGH_RISK", label: "임상적 유의 수준 (T>=70)", riskLevel: "SEVERE" };
+        if (maxSub >= 65) return { verdict: "ATTENTION", label: "경계선/주의 수준 (T>=65)", riskLevel: "MODERATE" };
+        return { verdict: "NORMAL", label: "정상 범위 (T<65)", riskLevel: "NORMAL" };
+      }
+    },
+    MMPI_A: {
+      name: "청소년 다면적 인성검사 (MMPI-A)",
+      maxScore: 120,
+      unit: "T점수",
+      subscales: [
+        { key: "Hs", name: "1. 건강염려증 (Hs)", max: 120 },
+        { key: "D", name: "2. 우울증 (D)", max: 120 },
+        { key: "Hy", name: "3. 히스테리 (Hy)", max: 120 },
+        { key: "Pd", name: "4. 반사회성 (Pd)", max: 120 },
+        { key: "Mf", name: "5. 남성성-여성성 (Mf)", max: 120 },
+        { key: "Pa", name: "6. 편집증 (Pa)", max: 120 },
+        { key: "Pt", name: "7. 강박증/불안 (Pt)", max: 120 },
+        { key: "Sc", name: "8. 조현증 (Sc)", max: 120 },
+        { key: "Ma", name: "9. 경조증 (Ma)", max: 120 },
+        { key: "Si", name: "0. 사회적 내향성 (Si)", max: 120 }
+      ],
+      evaluate: function(score, subscales) {
+        let maxSub = score;
+        if (subscales) {
+          const vals = Object.values(subscales).map(v => parseFloat(v) || 0);
+          if (vals.length > 0) maxSub = Math.max(...vals);
+        }
+        if (maxSub >= 70) return { verdict: "HIGH_RISK", label: "임상적 유의 수준 (T>=70)", riskLevel: "SEVERE" };
+        if (maxSub >= 65) return { verdict: "ATTENTION", label: "경계선/주의 수준 (T>=65)", riskLevel: "MODERATE" };
+        return { verdict: "NORMAL", label: "정상 범위 (T<65)", riskLevel: "NORMAL" };
+      }
     }
   },
 

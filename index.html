@@ -677,6 +677,25 @@
       <form id="formNewTest">
         <div class="modal-body">
           <div class="form-grid">
+
+            <!-- 검사지 PDF 파일 자동 파싱 & 첨부 드롭존 -->
+            <div class="form-field full-width">
+              <div id="testPdfUploadArea" class="pdf-dropzone-box" style="border: 2px dashed #93c5fd; background: #eff6ff; border-radius: 8px; padding: 14px 16px; text-align: center; cursor: pointer; transition: all 0.2s">
+                <div style="font-size: 24px; margin-bottom: 2px">📄</div>
+                <div style="font-weight: 600; font-size: 13.5px; color: #1e40af">
+                  검사지 원본(PDF) 자동 분석 및 첨부 <span style="font-size:12px;font-weight:normal;color:#3b82f6">(클릭 또는 파일 드래그)</span>
+                </div>
+                <div style="font-size: 12px; color: #64748b; margin-top: 3px">
+                  마음사랑 MMPI-2 / MMPI-A 결과지 PDF를 넣으면 <strong>0.1초 만에 척도 점수가 자동 입력</strong>되고 원본이 학생 이력에 보관됩니다.
+                </div>
+                <input type="file" id="pdfFileInput" accept=".pdf" style="display:none">
+              </div>
+              <div id="pdfParseNotice" style="display:none;margin-top:8px;padding:8px 12px;background:#ecfdf5;border:1px solid #6ee7b7;border-radius:6px;font-size:12.5px;color:#065f46">
+              </div>
+              <input type="hidden" id="attachedPdfData" name="pdfData" value="">
+              <input type="hidden" id="attachedPdfName" name="pdfName" value="">
+            </div>
+
             <div class="form-field full-width">
               <label>대상 학생 검색 및 선택 <span class="req">*</span></label>
               <div class="search-select-wrapper">
@@ -693,7 +712,9 @@
             <div class="form-field full-width">
               <label>검사 척도 선택 <span class="req">*</span></label>
               <select name="testType" id="newTestTypeSelect" class="input-control" required>
-                <option value="AMPQ_II">학생정서·행동특성 2차 심층검사 (AMPQ-II)</option>
+                <option value="MMPI_2">마음사랑 다면적 인성검사 (MMPI-2)</option>
+                <option value="MMPI_A">청소년 다면적 인성검사 (MMPI-A)</option>
+                <option value="AMPQ_II" selected>학생정서·행동특성 2차 심층검사 (AMPQ-II)</option>
                 <option value="K_BDI_II">한국판 청소년 우울척도 (K-BDI-II)</option>
                 <option value="RCMAS">아동·청소년 불안척도 (RCMAS)</option>
                 <option value="C_SSRS">콜롬비아 자살위험도 평가척도 (C-SSRS)</option>
@@ -1002,6 +1023,14 @@
   <!-- ExcelJS 라이브러리 (XLSX 드롭다운 유효성검사 & 파서) -->
   <script src="js/exceljs.min.js"></script>
   <script>if (!window.ExcelJS) document.write('<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"><\/script>');</script>
+
+  <!-- PDF.js 라이브러리 (브라우저 자체 PDF 텍스트 추출 엔진) -->
+  <script src="js/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'js/pdf.worker.min.js';
+    }
+  </script>
 
   <!-- JS Modules 순서대로 로드 -->
   <script src="js/config.js"></script>

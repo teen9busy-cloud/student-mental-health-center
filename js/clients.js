@@ -95,6 +95,9 @@
         testListEl.innerHTML = student.tests.map(t => {
           const testDef = window.APP_CONFIG.testTypes[t.test_type];
           const testName = testDef ? testDef.name : t.test_type;
+          const hasPdf = !!(t.pdf_data || t.pdf_url || t.file_name);
+          const pdfFileName = t.pdf_name || t.file_name || "원본검사지.pdf";
+
           return `
             <div style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin-bottom:10px">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -107,7 +110,15 @@
               <div style="font-size:13.5px;color:var(--text-main);margin-bottom:4px">
                 총점: <strong>${t.total_score}점</strong> ${t.t_score ? `(T점수: ${t.t_score})` : ""} | 실시자: ${t.examiner || "미기재"}
               </div>
-              ${t.summary_opinion ? `<div style="font-size:13px;background:#f8fafc;padding:8px 10px;border-radius:4px;color:var(--text-sub);border-left:3px solid var(--primary)">${t.summary_opinion}</div>` : ""}
+              ${t.summary_opinion ? `<div style="font-size:13px;background:#f8fafc;padding:8px 10px;border-radius:4px;color:var(--text-sub);border-left:3px solid var(--primary);margin-bottom:6px">${t.summary_opinion}</div>` : ""}
+              ${hasPdf ? `
+                <div style="margin-top:6px;display:flex;align-items:center;gap:8px">
+                  <span class="badge" style="background:#e0e7ff;color:#1e40af;font-size:12px">📎 ${pdfFileName}</span>
+                  <button type="button" class="btn btn-outline btn-sm" style="font-size:12px;padding:3px 10px" onclick="window.viewTestPdf('${t.id}')">
+                    📄 원본 검사지(PDF) 보기
+                  </button>
+                </div>
+              ` : ""}
             </div>
           `;
         }).join("");
@@ -860,6 +871,51 @@
       });
     }
   });
+
+  // 원본 검사지(PDF) 새 탭/뷰어 열람
+  window.viewTestPdf = async function(testId) {
+    const tests = await window.DB.getTests();
+    const test = tests.find(t => t.id === testId);
+    if (!test) return;
+
+    let pdfSrc = test.pdf_data || test.pdf_url;
+    if (!pdfSrc && test.file_name) {
+      pdfSrc = `./${test.file_name}`;
+    }
+
+    if (!pdfSrc) {
+      window.UI.showToast("첨부된 원본 PDF 파일이 없습니다.", "warn");
+      return;
+    }
+
+    // 새 탭에서 열기
+    const win = window.open();
+    if (win) {
+      win.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>${test.file_name || "심리검사지_원본.pdf"}</title>
+            <meta charset="utf-8">
+            <style>
+              body { margin: 0; padding: 0; background: #525659; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; }
+              .pdf-header { background: #323639; color: #fff; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+              iframe { flex: 1; border: none; width: 100%; height: calc(100vh - 45px); }
+            </style>
+          </head>
+          <body>
+            <div class="pdf-header">
+              <span><strong>📄 심리검사 원본 결과지:</strong> ${test.file_name || "원본검사지.pdf"} (${test.client_name} 학생)</span>
+              <a href="${pdfSrc}" download="${test.file_name || "검사결과지.pdf"}" style="color:#60a5fa;text-decoration:none;font-size:13px">📥 파일 다운로드</a>
+            </div>
+            <iframe src="${pdfSrc}"></iframe>
+          </body>
+        </html>
+      `);
+    } else {
+      window.UI.showToast("팝업이 차단되었습니다. 브라우저 팝업 허용 후 다시 클릭해 주세요.", "warn");
+    }
+  };
 
   window.renderClientsList = renderClientsList;
   window.viewStudentDetail = viewStudentDetail;
