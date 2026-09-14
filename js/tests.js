@@ -48,7 +48,10 @@
           <td>${verdictBadge}</td>
           <td>${t.examiner || "미기재"}</td>
           <td>
-            <button class="btn btn-outline btn-sm" onclick="window.viewTestDetail('${t.id}')">소견/상세</button>
+            <div style="display:flex;gap:4px">
+              <button class="btn btn-outline btn-sm" onclick="window.viewTestDetail('${t.id}')">소견/상세</button>
+              <button class="btn btn-outline btn-sm" style="color:#ef4444;border-color:#fca5a5;padding:3px 7px" title="휴지통으로 이동" onclick="window.deleteTestRecord('${t.id}', '${typeName}')">🗑️</button>
+            </div>
           </td>
         </tr>
       `;

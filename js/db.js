@@ -102,7 +102,7 @@ window.DB = (function() {
 
       if (isSupabaseMode && supabaseClient) {
         try {
-          let query = supabaseClient.from("smhc_clients").select("*").order("created_at", { ascending: false });
+          let query = supabaseClient.from("smhc_clients").select("*").is("deleted_at", null).order("created_at", { ascending: false });
           if (filter.center_id && filter.center_id !== "all") query = query.eq("center_id", filter.center_id);
           if (filter.region_id && filter.region_id !== "all") query = query.eq("region_id", filter.region_id);
           if (filter.risk_level && filter.risk_level !== "all") query = query.eq("risk_level", filter.risk_level);
@@ -119,7 +119,7 @@ window.DB = (function() {
       // Supabase 미연결 또는 네트워크 오류 시 Local Demo Mode 사용
       if (list === null) {
         const data = getLocalData();
-        list = [...data.students];
+        list = data.students.filter(s => !s.deleted_at);
 
         if (filter.center_id && filter.center_id !== "all") {
           list = list.filter(s => s.center_id === filter.center_id);
@@ -133,6 +133,8 @@ window.DB = (function() {
         if (filter.school_level && filter.school_level !== "all") {
           list = list.filter(s => s.school_level === filter.school_level);
         }
+      } else {
+        list = list.filter(s => !s.deleted_at);
       }
 
       // 키워드 검색 (학생 성명, 식별코드, 학교명, 주호소문제, 담당자 등) - Supabase / Local 공통 완벽 적용
@@ -275,7 +277,55 @@ window.DB = (function() {
     },
 
     // 학생 삭제
+    // 학생 소프트 삭제 (휴지통 이동)
     deleteClient: async function(id) {
+      const now = new Date().toISOString();
+      if (isSupabaseMode && supabaseClient) {
+        try {
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+          let q = supabaseClient.from("smhc_clients").update({ deleted_at: now });
+          if (isUuid) q = q.eq("id", id);
+          else q = q.eq("client_code", id);
+          await q;
+        } catch(e) {
+          console.warn("[DB] Supabase 학생 삭제 오류:", e);
+        }
+      }
+
+      const data = getLocalData();
+      const s = data.students.find(item => item.id === id || item.client_code === id);
+      if (s) {
+        s.deleted_at = now;
+        saveLocalData(data);
+      }
+      return true;
+    },
+
+    // 학생 복구 (휴지통 -> 복원)
+    restoreClient: async function(id) {
+      if (isSupabaseMode && supabaseClient) {
+        try {
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+          let q = supabaseClient.from("smhc_clients").update({ deleted_at: null });
+          if (isUuid) q = q.eq("id", id);
+          else q = q.eq("client_code", id);
+          await q;
+        } catch(e) {
+          console.warn("[DB] Supabase 학생 복구 오류:", e);
+        }
+      }
+
+      const data = getLocalData();
+      const s = data.students.find(item => item.id === id || item.client_code === id);
+      if (s) {
+        delete s.deleted_at;
+        saveLocalData(data);
+      }
+      return true;
+    },
+
+    // 학생 영구 삭제 (완전 말소)
+    permanentDeleteClient: async function(id) {
       if (isSupabaseMode && supabaseClient) {
         try {
           const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
@@ -283,7 +333,9 @@ window.DB = (function() {
           if (isUuid) q = q.eq("id", id);
           else q = q.eq("client_code", id);
           await q;
-        } catch(e) {}
+        } catch(e) {
+          console.warn("[DB] Supabase 학생 영구삭제 오류:", e);
+        }
       }
 
       const data = getLocalData();
@@ -300,7 +352,7 @@ window.DB = (function() {
 
       if (isSupabaseMode && supabaseClient) {
         try {
-          let query = supabaseClient.from("smhc_psych_tests").select("*").order("test_date", { ascending: false });
+          let query = supabaseClient.from("smhc_psych_tests").select("*").is("deleted_at", null).order("test_date", { ascending: false });
           if (filter.client_id) {
             const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(filter.client_id);
             if (isUuid) query = query.eq("client_id", filter.client_id);
@@ -319,10 +371,12 @@ window.DB = (function() {
 
       if (list === null) {
         const data = getLocalData();
-        list = [...data.tests];
+        list = data.tests.filter(t => !t.deleted_at);
         if (filter.client_id) list = list.filter(t => t.client_id === filter.client_id || t.client_code === filter.client_id);
         if (filter.test_type) list = list.filter(t => t.test_type === filter.test_type);
         if (filter.verdict) list = list.filter(t => t.verdict === filter.verdict);
+      } else {
+        list = list.filter(t => !t.deleted_at);
       }
 
       if (filter.keyword) {
@@ -335,6 +389,70 @@ window.DB = (function() {
       }
 
       return list.sort((a, b) => new Date(b.test_date) - new Date(a.test_date));
+    },
+
+    // 심리검사 소프트 삭제 (휴지통 이동)
+    deleteTest: async function(id) {
+      const now = new Date().toISOString();
+      if (isSupabaseMode && supabaseClient) {
+        try {
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+          let q = supabaseClient.from("smhc_psych_tests").update({ deleted_at: now });
+          if (isUuid) q = q.eq("id", id);
+          await q;
+        } catch(e) {
+          console.warn("[DB] Supabase 검사 삭제 오류:", e);
+        }
+      }
+
+      const data = getLocalData();
+      const t = data.tests.find(item => item.id === id);
+      if (t) {
+        t.deleted_at = now;
+        saveLocalData(data);
+      }
+      return true;
+    },
+
+    // 심리검사 복구 (휴지통 -> 복원)
+    restoreTest: async function(id) {
+      if (isSupabaseMode && supabaseClient) {
+        try {
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+          let q = supabaseClient.from("smhc_psych_tests").update({ deleted_at: null });
+          if (isUuid) q = q.eq("id", id);
+          await q;
+        } catch(e) {
+          console.warn("[DB] Supabase 검사 복구 오류:", e);
+        }
+      }
+
+      const data = getLocalData();
+      const t = data.tests.find(item => item.id === id);
+      if (t) {
+        delete t.deleted_at;
+        saveLocalData(data);
+      }
+      return true;
+    },
+
+    // 심리검사 영구 삭제
+    permanentDeleteTest: async function(id) {
+      if (isSupabaseMode && supabaseClient) {
+        try {
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+          let q = supabaseClient.from("smhc_psych_tests").delete();
+          if (isUuid) q = q.eq("id", id);
+          await q;
+        } catch(e) {
+          console.warn("[DB] Supabase 검사 영구삭제 오류:", e);
+        }
+      }
+
+      const data = getLocalData();
+      data.tests = data.tests.filter(item => item.id !== id);
+      saveLocalData(data);
+      return true;
     },
 
     // 심리검사 결과 추가
@@ -406,7 +524,7 @@ window.DB = (function() {
 
       if (isSupabaseMode && supabaseClient) {
         try {
-          let query = supabaseClient.from("smhc_monitoring_logs").select("*").order("session_date", { ascending: false });
+          let query = supabaseClient.from("smhc_monitoring_logs").select("*").is("deleted_at", null).order("session_date", { ascending: false });
           if (filter.client_id) query = query.eq("client_id", filter.client_id);
           const { data, error } = await query;
           if (!error && Array.isArray(data)) {
@@ -419,11 +537,81 @@ window.DB = (function() {
 
       if (list === null) {
         const data = getLocalData();
-        list = [...data.monitoringLogs];
+        list = (data.monitoringLogs || []).filter(l => !l.deleted_at);
         if (filter.client_id) list = list.filter(l => l.client_id === filter.client_id);
+      } else {
+        list = list.filter(l => !l.deleted_at);
       }
 
       return list.sort((a, b) => new Date(b.session_date) - new Date(a.session_date));
+    },
+
+    // 휴지통 전체 항목 조회 (학생 & 검사)
+    getTrashItems: async function() {
+      let clients = [];
+      let tests = [];
+
+      if (isSupabaseMode && supabaseClient) {
+        try {
+          const { data: cData } = await supabaseClient.from("smhc_clients").select("*").not("deleted_at", "is", null).order("deleted_at", { ascending: false });
+          if (cData) clients = cData;
+
+          const { data: tData } = await supabaseClient.from("smhc_psych_tests").select("*").not("deleted_at", "is", null).order("deleted_at", { ascending: false });
+          if (tData) tests = tData;
+        } catch(e) {
+          console.warn("[DB] Supabase 휴지통 조회:", e);
+        }
+      }
+
+      const local = getLocalData();
+      const localClients = (local.students || []).filter(s => !!s.deleted_at);
+      const localTests = (local.tests || []).filter(t => !!t.deleted_at);
+
+      const mergedClients = [...clients];
+      localClients.forEach(lc => {
+        if (!mergedClients.some(c => c.id === lc.id || c.client_code === lc.client_code)) {
+          mergedClients.push(lc);
+        }
+      });
+
+      const mergedTests = [...tests];
+      localTests.forEach(lt => {
+        if (!mergedTests.some(t => t.id === lt.id)) {
+          mergedTests.push(lt);
+        }
+      });
+
+      // 7일 만료 계산 헬퍼 첨부
+      const now = new Date();
+      const formatItem = (item) => {
+        const delDate = new Date(item.deleted_at);
+        const diffDays = Math.floor((now - delDate) / (1000 * 60 * 60 * 24));
+        const daysLeft = Math.max(0, 7 - diffDays);
+        return {
+          ...item,
+          daysLeft: daysLeft,
+          days_left: daysLeft,
+          deletedDateStr: item.deleted_at ? item.deleted_at.split("T")[0] : "최근"
+        };
+      };
+
+      return {
+        clients: mergedClients.map(formatItem),
+        tests: mergedTests.map(formatItem),
+        totalCount: mergedClients.length + mergedTests.length
+      };
+    },
+
+    // 휴지통 전체 비우기 (영구 삭제)
+    emptyTrash: async function() {
+      const trash = await this.getTrashItems();
+      for (const c of trash.clients) {
+        await this.permanentDeleteClient(c.id);
+      }
+      for (const t of trash.tests) {
+        await this.permanentDeleteTest(t.id);
+      }
+      return true;
     },
 
     // 모니터링 일지 작성

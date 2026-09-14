@@ -48,6 +48,11 @@
         📦 로컬 데모 모드 (오프라인 가능)
       </div>
 
+      <!-- 휴지통 바로가기 버튼 -->
+      <button class="btn-ghost-white" id="btnHeaderTrash" onclick="window.openTrashBin()" style="display:inline-flex;align-items:center;gap:6px" title="삭제된 학생 및 검사 기록 보관함">
+        <span>🗑️</span> 휴지통 <span id="headerTrashBadge" style="background:#ef4444;color:#fff;font-size:11px;font-weight:bold;padding:1px 7px;border-radius:10px;display:none">0</span>
+      </button>
+
       <button class="btn-ghost-white" onclick="if(confirm('데모 데이터를 처음 상태로 초기화하시겠습니까?')){ window.DB.resetToDemoData(); location.reload(); }">
         🔄 데이터 리셋
       </button>
@@ -659,7 +664,10 @@
           </div>
         </div>
       </div>
-      <div class="modal-footer">
+      <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center">
+        <button type="button" class="btn btn-outline btn-sm" style="color:#ef4444;border-color:#fca5a5" onclick="window.deleteCurrentStudent()" title="학생 프로필 및 관련 기록을 휴지통으로 이동합니다">
+          🗑️ 학생 삭제 (휴지통 이동)
+        </button>
         <button type="button" class="btn btn-primary" onclick="window.UI.closeModal('modalStudentDetail')">닫기</button>
       </div>
     </div>
@@ -1025,6 +1033,77 @@
     </div>
   </div>
 
+  <!-- ========================================================================
+       MODAL 7: 데이터 휴지통 (소프트 삭제 복구 및 영구삭제)
+       ======================================================================== -->
+  <div id="modalTrashBin" class="modal-backdrop">
+    <div class="modal-dialog wide">
+      <div class="modal-header">
+        <div>
+          <h3>🗑️ 데이터 휴지통 (Recycle Bin)</h3>
+          <div style="font-size:13px;color:var(--text-sub)">삭제된 학생 프로필 및 심리검사 기록을 7일간 안전하게 보관하며, 언제든 1클릭으로 복구할 수 있습니다.</div>
+        </div>
+        <button class="modal-close" onclick="window.UI.closeModal('modalTrashBin')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- 탭 전환: 삭제된 학생 vs 삭제된 심리검사 -->
+        <div style="display:flex;gap:10px;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:10px">
+          <button type="button" id="btnTabTrashClients" class="btn btn-sm btn-primary" onclick="window.switchTrashTab('clients')">
+            👥 삭제된 학생 (<span id="trashClientCount">0</span>)
+          </button>
+          <button type="button" id="btnTabTrashTests" class="btn btn-sm btn-outline" onclick="window.switchTrashTab('tests')">
+            📝 삭제된 심리검사 (<span id="trashTestCount">0</span>)
+          </button>
+        </div>
+
+        <div style="background:#fef2f2;border:1px solid #fecaca;padding:10px 14px;border-radius:6px;font-size:12.5px;color:#991b1b;margin-bottom:14px">
+          ⏱️ <strong>안내</strong>: 삭제된 항목은 <strong>최대 7일간</strong> 보관된 후 영구 파기됩니다. 복구를 원하시면 <strong>[🔄 복구]</strong> 버튼을 클릭하세요.
+        </div>
+
+        <!-- 삭제된 학생 테이블 -->
+        <div id="trashClientsContainer" class="table-responsive" style="max-height:360px;overflow-y:auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>식별코드</th>
+                <th>성명(성별)</th>
+                <th>소속 학교</th>
+                <th>삭제 일시</th>
+                <th>보관 만료</th>
+                <th style="text-align:center">관리</th>
+              </tr>
+            </thead>
+            <tbody id="trashClientsTbody"></tbody>
+          </table>
+        </div>
+
+        <!-- 삭제된 검사 테이블 -->
+        <div id="trashTestsContainer" class="table-responsive" style="display:none;max-height:360px;overflow-y:auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>대상 학생</th>
+                <th>검사 종류</th>
+                <th>총점/T점수</th>
+                <th>판정 결과</th>
+                <th>삭제 일시</th>
+                <th>보관 만료</th>
+                <th style="text-align:center">관리</th>
+              </tr>
+            </thead>
+            <tbody id="trashTestsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center">
+        <button type="button" class="btn btn-outline btn-sm" style="color:#ef4444;border-color:#fca5a5" onclick="window.emptyTrashAll()">
+          💥 휴지통 비우기 (전체 영구삭제)
+        </button>
+        <button type="button" class="btn btn-primary" onclick="window.UI.closeModal('modalTrashBin')">닫기</button>
+      </div>
+    </div>
+  </div>
+
 
   <!-- ExcelJS 라이브러리 (XLSX 드롭다운 유효성검사 & 파서) -->
   <script src="js/exceljs.min.js"></script>
@@ -1047,6 +1126,7 @@
   <script src="js/tests.js"></script>
   <script src="js/monitoring.js"></script>
   <script src="js/stats.js"></script>
+  <script src="js/trash.js"></script>
 
   <!-- 초기화 스크립트 -->
   <script>
@@ -1067,6 +1147,7 @@
       // 3. DB 상태 뱃지 및 역할 배너 업데이트
       window.UI.updateDbStatusBadge();
       if (window.UI.updateRoleBanner) window.UI.updateRoleBanner();
+      if (window.updateTrashBadge) window.updateTrashBadge();
 
       // 4. 초기 화면 렌더링
       if (window.renderDashboard) window.renderDashboard();

@@ -56,7 +56,10 @@
           <td>${s.referral_source}</td>
           <td>${riskBadge}</td>
           <td>
-            <button class="btn btn-outline btn-sm" onclick="window.viewStudentDetail('${s.id}')">상세/기록</button>
+            <div style="display:flex;gap:4px">
+              <button class="btn btn-outline btn-sm" onclick="window.viewStudentDetail('${s.id}')">상세/기록</button>
+              <button class="btn btn-outline btn-sm" style="color:#ef4444;border-color:#fca5a5;padding:3px 7px" title="휴지통으로 이동" onclick="window.deleteStudentById('${s.id}', '${s.name}')">🗑️</button>
+            </div>
           </td>
         </tr>
       `;
@@ -102,9 +105,10 @@
             <div style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin-bottom:10px">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
                 <strong style="font-size:14.5px">${testName}</strong>
-                <div>
-                  <span style="font-size:12.5px;color:var(--text-sub);margin-right:8px">${t.test_date}</span>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="font-size:12.5px;color:var(--text-sub);margin-right:4px">${t.test_date}</span>
                   ${window.UI.renderVerdictBadge(t.verdict)}
+                  <button type="button" class="btn btn-outline btn-sm" style="color:#ef4444;border-color:#fca5a5;padding:1px 6px;font-size:11px" title="검사 삭제" onclick="window.deleteTestRecord('${t.id}', '${testName}')">🗑️</button>
                 </div>
               </div>
               <div style="font-size:13.5px;color:var(--text-main);margin-bottom:4px">
@@ -993,4 +997,5 @@
   window.saveDoctorOpinion = saveDoctorOpinion;
   window.openAddTestForCurrentStudent = openAddTestForCurrentStudent;
   window.openAddLogForCurrentStudent = openAddLogForCurrentStudent;
+  window.getSelectedStudentId = () => selectedStudentId;
 })();
