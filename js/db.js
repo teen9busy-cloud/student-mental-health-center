@@ -35,6 +35,12 @@ window.DB = (function() {
     if (window.UI && window.UI.updateDbStatusBadge) {
       window.UI.updateDbStatusBadge();
     }
+    if (isSupabaseMode) {
+      if (window.renderDashboard) window.renderDashboard();
+      if (window.renderClientsList) window.renderClientsList();
+      if (window.renderTestsView) window.renderTestsView();
+      if (window.renderMonitoringView) window.renderMonitoringView();
+    }
   }
 
   // 로컬 데모 저장소 로드
