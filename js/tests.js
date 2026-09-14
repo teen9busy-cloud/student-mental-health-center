@@ -145,7 +145,7 @@
     e.preventDefault();
     const form = e.target;
     const studentSelect = form.studentSelect;
-    const studentId = studentSelect ? studentSelect.value : "";
+    let studentId = studentSelect ? studentSelect.value : "";
     if (!studentId) {
       window.UI.showToast("검사 대상 학생을 검색창에서 찾아 선택해 주세요.", "warning");
       return;
@@ -153,14 +153,6 @@
 
     let studentName = studentSelect.dataset ? studentSelect.dataset.name : "";
     let studentCode = studentSelect.dataset ? studentSelect.dataset.code : "";
-
-    if (!studentName || !studentCode) {
-      const client = await window.DB.getClientById(studentId);
-      if (client) {
-        studentName = client.name;
-        studentCode = client.client_code || client.code;
-      }
-    }
 
     const testType = form.testType.value;
     const typeDef = window.APP_CONFIG.testTypes[testType];
@@ -177,6 +169,43 @@
     });
 
     const evalResult = typeDef ? typeDef.evaluate(totalScore, subscores) : { verdict: "NORMAL", riskLevel: "NORMAL" };
+
+    // 신규 학생 자동 생성 (검사 먼저 등록하는 경우)
+    if (studentId === "__NEW__" || (studentSelect.dataset && studentSelect.dataset.isNew === "true")) {
+      const currentRole = window.UI.getCurrentRole ? window.UI.getCurrentRole() : { centerId: "jinju", regionId: "jinju" };
+      const rawSchool = (studentSelect.dataset && studentSelect.dataset.school) ? studentSelect.dataset.school : "임시등록 (상세수정 필요)";
+      let schoolLevel = "중학교";
+      if (rawSchool.includes("초등")) schoolLevel = "초등학교";
+      else if (rawSchool.includes("고등")) schoolLevel = "고등학교";
+      else if (rawSchool.includes("특수")) schoolLevel = "특수학교";
+
+      const newStudent = await window.DB.addClient({
+        name: studentName,
+        gender: (studentSelect.dataset && studentSelect.dataset.gender) || "남",
+        birth_date: (studentSelect.dataset && studentSelect.dataset.birth) || null,
+        center_id: currentRole.centerId || "jinju",
+        region_id: currentRole.regionId || "jinju",
+        school_level: schoolLevel,
+        school_name: rawSchool,
+        grade: 1,
+        referral_source: "Wee클래스(학교)",
+        main_concern: "정서/행동",
+        risk_level: evalResult.riskLevel || "NORMAL",
+        assigned_worker: "이민호 사회복지사",
+        assigned_psych: examiner || "박서연 임상심리사",
+        notes: `[심리검사(${testType}) 등록 시 자동 생성된 학생 프로필]`
+      });
+      studentId = newStudent.id;
+      studentCode = newStudent.client_code;
+      studentName = newStudent.name;
+      window.UI.showToast(`신규 학생 [${studentName}] (${studentCode}) 프로필이 자동 생성되었습니다!`, "info");
+    } else if (!studentName || !studentCode) {
+      const client = await window.DB.getClientById(studentId);
+      if (client) {
+        studentName = client.name;
+        studentCode = client.client_code || client.code;
+      }
+    }
 
     const pdfName = (form.pdfName && form.pdfName.value) ? form.pdfName.value : null;
     const pdfData = (form.pdfData && form.pdfData.value) ? form.pdfData.value : null;
@@ -522,8 +551,38 @@
     if (parsedBatchData.length === 0) return;
 
     try {
+      const currentRole = window.UI.getCurrentRole ? window.UI.getCurrentRole() : { centerId: "jinju", regionId: "jinju" };
+
+      // 미등록 학생 자동 생성 (Auto-Provisioning)
+      let autoCreatedCount = 0;
+      for (let item of parsedBatchData) {
+        if (!item.client_id) {
+          const newStu = await window.DB.addClient({
+            name: item.client_name || "신규학생",
+            gender: "남",
+            center_id: currentRole.centerId || "jinju",
+            region_id: currentRole.regionId || "jinju",
+            school_level: "고등학교",
+            school_name: "임시등록 (일괄업로드)",
+            grade: 1,
+            referral_source: "Wee클래스(학교)",
+            main_concern: "정서/행동",
+            risk_level: item.riskLevel || "NORMAL",
+            assigned_worker: "이민호 사회복지사",
+            assigned_psych: "박서연 임상심리사",
+            notes: `[심리검사 일괄 업로드 시 자동 생성된 학생 프로필]`
+          });
+          item.client_id = newStu.id;
+          item.client_code = newStu.client_code;
+          autoCreatedCount++;
+        }
+      }
+
       await window.DB.bulkAddTests(parsedBatchData);
-      window.UI.showToast(`${parsedBatchData.length}건의 검사 결과가 데이터베이스에 성공적으로 저장되었습니다!`, "success");
+      const msg = autoCreatedCount > 0
+        ? `${parsedBatchData.length}건의 검사 결과 저장 완료 (신규 학생 ${autoCreatedCount}명 프로필 자동 생성)`
+        : `${parsedBatchData.length}건의 검사 결과가 데이터베이스에 성공적으로 저장되었습니다!`;
+      window.UI.showToast(msg, "success");
       parsedBatchData = [];
       window.UI.closeModal("modalUploadTests");
       renderTestsView();
@@ -541,8 +600,10 @@
 
     selects.forEach(select => {
       if (!select) return;
-      select.innerHTML = `<option value="">학생을 선택하세요...</option>` +
-        students.map(s => `<option value="${s.id}" data-name="${s.name}" data-code="${s.client_code}">${s.client_code} - ${s.name} (${s.school_name})</option>`).join("");
+      if (select.tagName === "SELECT") {
+        select.innerHTML = `<option value="">학생을 선택하세요...</option>` +
+          students.map(s => `<option value="${s.id}" data-name="${s.name}" data-code="${s.client_code}">${s.client_code} - ${s.name} (${s.school_name})</option>`).join("");
+      }
     });
   }
 
@@ -689,9 +750,26 @@
           handleTestTypeChange();
         }
 
-        // 수검자 이름 추출 (예: · 이름 : 김상철)
-        const nameMatch = fullText.match(/이름\s*:\s*([^\n\r·]+)/) || fullText.match(/성명\s*:\s*([^\n\r·]+)/);
+        // 수검자 메타데이터 추출 (이름, 성별, 소속학교, 생년월일)
+        const nameMatch = fullText.match(/(?:이름|성명)\s*[:：]\s*([^\n\r·]+)/);
         const detectedName = nameMatch ? nameMatch[1].trim() : "";
+
+        const genderMatch = fullText.match(/(?:성별)\s*[:：]\s*([^\n\r·]+)/);
+        let detectedGender = "남";
+        if (genderMatch) {
+          const gStr = genderMatch[1].trim();
+          if (gStr.includes("여") || gStr.toUpperCase() === "F") detectedGender = "여";
+          else detectedGender = "남";
+        }
+
+        const schoolMatch = fullText.match(/(?:소속|학교)\s*[:：]\s*([^\n\r·]+)/);
+        const detectedSchool = schoolMatch ? schoolMatch[1].trim() : "";
+
+        const birthMatch = fullText.match(/(?:생년월일)\s*[:：]\s*([0-9\.\-\/]+)/);
+        let detectedBirth = null;
+        if (birthMatch) {
+          detectedBirth = birthMatch[1].replace(/[^0-9]/g, "-").replace(/--+/g, "-").slice(0, 10);
+        }
 
         // 검사일자 추출 (예: 20260420 또는 2026-04-20)
         let detectedDate = "";
@@ -764,18 +842,39 @@
           opinionTextarea.value = `[마음사랑 MMPI-2 자동 판독] 타당도 척도(F=${fVal}, K=${kVal}, S=${sVal}) 수검 태도 신뢰로움. 10대 임상 척도 모두 T65 미만(최고 ${maxClinical}점)으로 현재 임상적 병리 징후 없는 안정 상태임. 원본 검사지(PDF) 보관 완료.`;
         }
 
-        // 대상 학생이 아직 미선택된 상태이고 PDF에서 이름을 찾은 경우 DB에서 자동 매칭
+        // 대상 학생 매핑 또는 신규 학생 자동 생성 모드 세팅
         const currentStudentId = document.getElementById("newTestStudentSelect").value;
-        if (!currentStudentId && detectedName) {
+        let matched = null;
+        if (detectedName) {
           const allStudents = await window.DB.getClients();
-          const matched = allStudents.find(s => s.name === detectedName);
+          matched = allStudents.find(s => s.name === detectedName);
+          const hidden = document.getElementById("newTestStudentSelect");
+          const card = document.getElementById("newTestSelectedCard");
+          const cardText = document.getElementById("newTestSelectedText");
+          const search = document.getElementById("newTestStudentSearch");
+
           if (matched) {
-            const hidden = document.getElementById("newTestStudentSelect");
-            const card = document.getElementById("newTestSelectedCard");
-            const cardText = document.getElementById("newTestSelectedText");
-            const search = document.getElementById("newTestStudentSearch");
-            if (hidden) { hidden.value = matched.id; hidden.dataset.name = matched.name; hidden.dataset.code = matched.client_code; }
+            if (hidden) {
+              hidden.value = matched.id;
+              hidden.dataset.name = matched.name;
+              hidden.dataset.code = matched.client_code;
+              delete hidden.dataset.isNew;
+            }
             if (cardText) cardText.innerHTML = `<strong>${matched.name}</strong> (${matched.client_code}) - ${matched.school_name}`;
+            if (card) card.style.display = "inline-flex";
+            if (search) search.style.display = "none";
+          } else if (!currentStudentId || currentStudentId === "__NEW__") {
+            if (hidden) {
+              hidden.value = "__NEW__";
+              hidden.dataset.name = detectedName;
+              hidden.dataset.isNew = "true";
+              hidden.dataset.gender = detectedGender;
+              if (detectedSchool) hidden.dataset.school = detectedSchool;
+              if (detectedBirth) hidden.dataset.birth = detectedBirth;
+            }
+            if (cardText) {
+              cardText.innerHTML = `<span style="background:#0284c7;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:700;margin-right:6px;">✨새 학생 자동감지</span><strong>${detectedName}</strong> ${detectedSchool ? `(${detectedSchool})` : ''} (검사 저장 시 프로필 자동생성)`;
+            }
             if (card) card.style.display = "inline-flex";
             if (search) search.style.display = "none";
           }
@@ -785,9 +884,12 @@
         const noticeEl = document.getElementById("pdfParseNotice");
         if (noticeEl) {
           noticeEl.style.display = "block";
+          const matchNotice = matched
+            ? `<span style="color:#059669;font-weight:600">[기존 등록 학생: ${matched.client_code} 연계]</span>`
+            : `<span style="color:#0284c7;font-weight:700">[미등록 신규 학생 ➔ 검사 저장 시 학생 프로필 자동 생성]</span>`;
           noticeEl.innerHTML = `
-            <strong>✅ PDF 검사지 자동 분석 완료:</strong> [${file.name}] 마음사랑 MMPI-2 인식 성공<br>
-            • 수검자: <strong>${detectedName || "김상철"}</strong> | 검사일: <strong>${detectedDate || "2026-04-20"}</strong><br>
+            <strong>✅ PDF 검사지 자동 분석 완료:</strong> [${file.name}] 마음사랑 ${isYouth ? "MMPI-A" : "MMPI-2"} 인식 성공<br>
+            • 수검자: <strong>${detectedName || "김상철"}</strong> ${matchNotice} | 검사일: <strong>${detectedDate || "2026-04-20"}</strong><br>
             • 10대 임상 척도 점수(최고 T=${maxClinical}점) 및 임상 소견이 폼에 자동 입력되었습니다.
           `;
         }

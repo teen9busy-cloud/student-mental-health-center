@@ -62,13 +62,38 @@
     }
 
     let studentName = studentSelect.dataset ? studentSelect.dataset.name : "";
-    if (!studentName) {
+    let targetClientId = studentId;
+
+    // 신규 학생 자동 생성 (모니터링/상담을 먼저 진행하는 경우)
+    if (studentId === "__NEW__" || (studentSelect.dataset && studentSelect.dataset.isNew === "true")) {
+      const currentRole = window.UI.getCurrentRole ? window.UI.getCurrentRole() : { centerId: "jinju", regionId: "jinju", name: "상담사" };
+      const currentRisk = form.currentRisk ? form.currentRisk.value : "MODERATE";
+
+      const newStudent = await window.DB.addClient({
+        name: studentName,
+        gender: "남",
+        center_id: currentRole.centerId || "jinju",
+        region_id: currentRole.regionId || "jinju",
+        school_level: "중학교",
+        school_name: "임시등록 (상세수정 필요)",
+        grade: 1,
+        referral_source: "Wee클래스(학교)",
+        main_concern: "상담의뢰",
+        risk_level: currentRisk || "MODERATE",
+        assigned_worker: form.workerName.value.trim() || currentRole.name || "이민호 사회복지사",
+        assigned_psych: "박서연 임상심리사",
+        notes: `[모니터링/상담 일지 작성 시 자동 생성된 학생 프로필]`
+      });
+      targetClientId = newStudent.id;
+      studentName = newStudent.name;
+      window.UI.showToast(`신규 학생 [${studentName}] (${newStudent.client_code}) 프로필이 자동 생성되었습니다!`, "info");
+    } else if (!studentName) {
       const client = await window.DB.getClientById(studentId);
       if (client) studentName = client.name;
     }
 
     const logRecord = {
-      client_id: studentId,
+      client_id: targetClientId,
       client_name: studentName,
       session_date: form.sessionDate.value || new Date().toISOString().split("T")[0],
       session_no: parseInt(form.sessionNo.value, 10) || 1,

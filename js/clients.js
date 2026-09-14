@@ -690,41 +690,51 @@
     if (!searchInput || !dropdown) return;
 
     searchInput.addEventListener("input", async () => {
-      const kw = searchInput.value.trim().toLowerCase();
+      const kw = searchInput.value.trim();
       if (!kw) {
         dropdown.style.display = "none";
         return;
       }
+      const kwLower = kw.toLowerCase();
 
       const allStudents = await window.DB.getClients();
       const matches = allStudents.filter(s =>
-        (s.name && s.name.toLowerCase().includes(kw)) ||
-        (s.client_code && s.client_code.toLowerCase().includes(kw)) ||
-        (s.school_name && s.school_name.toLowerCase().includes(kw))
+        (s.name && s.name.toLowerCase().includes(kwLower)) ||
+        (s.client_code && s.client_code.toLowerCase().includes(kwLower)) ||
+        (s.school_name && s.school_name.toLowerCase().includes(kwLower))
       ).slice(0, 8);
 
-      if (matches.length === 0) {
-        dropdown.innerHTML = `<div style="padding:12px;color:var(--text-sub);text-align:center;font-size:13px">일치하는 학생이 없습니다.</div>`;
-        dropdown.style.display = "block";
-        return;
+      let itemsHtml = "";
+      if (matches.length > 0) {
+        itemsHtml = matches.map(s => {
+          const riskBadge = window.UI.renderRiskBadge(s.risk_level);
+          return `
+            <div class="search-dropdown-item student-match-item" data-id="${s.id}" data-name="${s.name}" data-code="${s.client_code}" data-school="${s.school_name}" data-risk="${s.risk_level}">
+              <div>
+                <strong>${s.name}</strong> (${s.gender}) - <span style="font-size:12.5px;color:var(--text-sub)">${s.school_name}</span>
+                <div style="font-size:11.5px;color:var(--primary)">${s.client_code} | ${s.main_concern}</div>
+              </div>
+              <div>${riskBadge}</div>
+            </div>
+          `;
+        }).join("");
       }
 
-      dropdown.innerHTML = matches.map(s => {
-        const riskBadge = window.UI.renderRiskBadge(s.risk_level);
-        return `
-          <div class="search-dropdown-item" data-id="${s.id}" data-name="${s.name}" data-code="${s.client_code}" data-school="${s.school_name}" data-risk="${s.risk_level}">
-            <div>
-              <strong>${s.name}</strong> (${s.gender}) - <span style="font-size:12.5px;color:var(--text-sub)">${s.school_name}</span>
-              <div style="font-size:11.5px;color:var(--primary)">${s.client_code} | ${s.main_concern}</div>
-            </div>
-            <div>${riskBadge}</div>
+      // 항상 하단(또는 검색결과 없을 시)에 신규 학생 즉시 생성 & 연결 옵션 노출
+      const newOptionHtml = `
+        <div class="search-dropdown-item auto-create-item" data-name="${kw}" style="background:#f0f9ff;border-top:${matches.length > 0 ? '1px dashed #bae6fd' : 'none'};display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 12px">
+          <div>
+            <span style="color:#0284c7;font-weight:700;">✨ "+ ${kw}" 학생 신규 프로필 생성</span>
+            <div style="font-size:11.5px;color:#0369a1;">저장 시 학생 프로필이 자동으로 생성되고 즉시 연결됩니다.</div>
           </div>
-        `;
-      }).join("");
+          <span style="background:#0284c7;color:#fff;font-size:11px;font-weight:bold;padding:3px 8px;border-radius:4px;">자동 생성 +</span>
+        </div>
+      `;
 
+      dropdown.innerHTML = itemsHtml + newOptionHtml;
       dropdown.style.display = "block";
 
-      dropdown.querySelectorAll(".search-dropdown-item").forEach(item => {
+      dropdown.querySelectorAll(".student-match-item").forEach(item => {
         item.addEventListener("click", () => {
           const sid = item.dataset.id;
           const sname = item.dataset.name;
@@ -734,6 +744,10 @@
           hiddenInput.value = sid;
           hiddenInput.dataset.name = sname;
           hiddenInput.dataset.code = scode;
+          delete hiddenInput.dataset.isNew;
+          delete hiddenInput.dataset.gender;
+          delete hiddenInput.dataset.school;
+          delete hiddenInput.dataset.birth;
 
           cardText.innerHTML = `<strong>${sname}</strong> (${scode}) - ${sschool}`;
           card.style.display = "inline-flex";
@@ -742,6 +756,26 @@
           searchInput.value = "";
         });
       });
+
+      const createBtn = dropdown.querySelector(".auto-create-item");
+      if (createBtn) {
+        createBtn.addEventListener("click", () => {
+          const sname = createBtn.dataset.name;
+          hiddenInput.value = "__NEW__";
+          hiddenInput.dataset.name = sname;
+          hiddenInput.dataset.isNew = "true";
+          delete hiddenInput.dataset.code;
+          delete hiddenInput.dataset.gender;
+          delete hiddenInput.dataset.school;
+          delete hiddenInput.dataset.birth;
+
+          cardText.innerHTML = `<span style="background:#0284c7;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:700;margin-right:6px;">✨신규</span><strong>${sname}</strong> (저장 시 프로필 자동생성)`;
+          card.style.display = "inline-flex";
+          searchInput.style.display = "none";
+          dropdown.style.display = "none";
+          searchInput.value = "";
+        });
+      }
     });
 
     document.addEventListener("click", (e) => {
@@ -756,7 +790,15 @@
     const hidden = document.getElementById("newTestStudentSelect");
     const card = document.getElementById("newTestSelectedCard");
     const search = document.getElementById("newTestStudentSearch");
-    if (hidden) { hidden.value = ""; delete hidden.dataset.name; delete hidden.dataset.code; }
+    if (hidden) {
+      hidden.value = "";
+      delete hidden.dataset.name;
+      delete hidden.dataset.code;
+      delete hidden.dataset.isNew;
+      delete hidden.dataset.gender;
+      delete hidden.dataset.school;
+      delete hidden.dataset.birth;
+    }
     if (card) card.style.display = "none";
     if (search) { search.style.display = "block"; search.value = ""; search.focus(); }
   };
@@ -765,7 +807,15 @@
     const hidden = document.getElementById("newLogStudentSelect");
     const card = document.getElementById("newLogSelectedCard");
     const search = document.getElementById("newLogStudentSearch");
-    if (hidden) { hidden.value = ""; delete hidden.dataset.name; delete hidden.dataset.code; }
+    if (hidden) {
+      hidden.value = "";
+      delete hidden.dataset.name;
+      delete hidden.dataset.code;
+      delete hidden.dataset.isNew;
+      delete hidden.dataset.gender;
+      delete hidden.dataset.school;
+      delete hidden.dataset.birth;
+    }
     if (card) card.style.display = "none";
     if (search) { search.style.display = "block"; search.value = ""; search.focus(); }
   };
