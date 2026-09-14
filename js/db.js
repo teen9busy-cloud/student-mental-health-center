@@ -8,21 +8,32 @@ window.DB = (function() {
   let isSupabaseMode = false;
 
   // Supabase 클라이언트 초기화 시도
-  function initSupabase() {
+  async function initSupabase() {
     const url = window.APP_CONFIG.supabase.url;
     const key = window.APP_CONFIG.supabase.anonKey;
     if (url && key && window.supabase) {
       try {
         supabaseClient = window.supabase.createClient(url, key);
-        isSupabaseMode = true;
-        console.log("[DB] Supabase 연결 모드로 동작합니다:", url);
+        // Supabase에 smhc_clients 테이블이 있는지 가볍게 확인
+        const { data, error } = await supabaseClient.from("smhc_clients").select("id").limit(1);
+        if (!error) {
+          isSupabaseMode = true;
+          console.log("[DB] Supabase 클라우드 모드로 활성화되었습니다:", url);
+        } else {
+          console.warn("[DB] Supabase 테이블 확인 불가(아직 DDL 미실행 상태일 수 있음). 하이브리드 로컬 모드로 동작합니다:", error.message);
+          isSupabaseMode = false;
+        }
       } catch (e) {
-        console.warn("[DB] Supabase 초기화 실패, 데모 모드로 동작합니다:", e);
+        console.warn("[DB] Supabase 초기화 실패, 로컬 데모 모드로 동작합니다:", e);
         isSupabaseMode = false;
       }
     } else {
       isSupabaseMode = false;
-      console.log("[DB] 데모 로컬 저장소 모드로 동작합니다.");
+      console.log("[DB] 로컬 데모 모드로 동작합니다.");
+    }
+
+    if (window.UI && window.UI.updateDbStatusBadge) {
+      window.UI.updateDbStatusBadge();
     }
   }
 
@@ -30,7 +41,6 @@ window.DB = (function() {
   function getLocalData() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      // 초기 목데이터를 복사하여 저장
       const init = JSON.parse(JSON.stringify(window.INITIAL_MOCK_DATA));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(init));
       return init;
@@ -84,15 +94,15 @@ window.DB = (function() {
     getClients: async function(filter = {}) {
       if (isSupabaseMode && supabaseClient) {
         try {
-          let query = supabaseClient.from("clients").select("*").order("created_at", { ascending: false });
+          let query = supabaseClient.from("smhc_clients").select("*").order("created_at", { ascending: false });
           if (filter.center_id && filter.center_id !== "all") query = query.eq("center_id", filter.center_id);
           if (filter.region_id && filter.region_id !== "all") query = query.eq("region_id", filter.region_id);
           if (filter.risk_level && filter.risk_level !== "all") query = query.eq("risk_level", filter.risk_level);
           if (filter.school_level && filter.school_level !== "all") query = query.eq("school_level", filter.school_level);
           const { data, error } = await query;
-          if (!error && data) return data;
+          if (!error && data && data.length > 0) return data;
         } catch (err) {
-          console.warn("[DB] Supabase 조회 실패, 로컬 데이터로 대체합니다:", err);
+          console.warn("[DB] Supabase 조회 폴백:", err);
         }
       }
 
@@ -130,8 +140,8 @@ window.DB = (function() {
       const student = data.students.find(s => s.id === id || s.client_code === id);
       if (!student) return null;
 
-      const tests = data.tests.filter(t => t.client_id === student.id);
-      const logs = data.monitoringLogs.filter(l => l.client_id === student.id);
+      const tests = data.tests.filter(t => t.client_id === student.id || t.client_code === student.client_code);
+      const logs = data.monitoringLogs.filter(l => l.client_id === student.id || l.client_name === student.name);
 
       return {
         ...student,
@@ -159,9 +169,9 @@ window.DB = (function() {
 
       if (isSupabaseMode && supabaseClient) {
         try {
-          await supabaseClient.from("clients").insert([record]);
+          await supabaseClient.from("smhc_clients").insert([record]);
         } catch (e) {
-          console.warn("[DB] Supabase 저장 실패 (로컬 저장은 완료됨):", e);
+          console.warn("[DB] Supabase 저장 폴백:", e);
         }
       }
 
@@ -191,6 +201,19 @@ window.DB = (function() {
 
     // 심리검사 결과 목록 조회
     getTests: async function(filter = {}) {
+      if (isSupabaseMode && supabaseClient) {
+        try {
+          let query = supabaseClient.from("smhc_psych_tests").select("*").order("test_date", { ascending: false });
+          if (filter.client_id) query = query.eq("client_id", filter.client_id);
+          if (filter.test_type) query = query.eq("test_type", filter.test_type);
+          if (filter.verdict) query = query.eq("verdict", filter.verdict);
+          const { data, error } = await query;
+          if (!error && data && data.length > 0) return data;
+        } catch (err) {
+          console.warn("[DB] Supabase 조회 폴백:", err);
+        }
+      }
+
       const data = getLocalData();
       let list = [...data.tests];
       if (filter.client_id) list = list.filter(t => t.client_id === filter.client_id);
@@ -210,11 +233,9 @@ window.DB = (function() {
       };
       data.tests.unshift(record);
 
-      // 검사 결과에 따라 학생의 위기도(risk_level) 자동 갱신
       if (testData.client_id && testData.riskLevel) {
         const student = data.students.find(s => s.id === testData.client_id);
         if (student) {
-          // 더 높은 위기도로 상향 조정
           const rank = { NORMAL: 1, MILD: 2, MODERATE: 3, SEVERE: 4 };
           if (rank[testData.riskLevel] > (rank[student.risk_level] || 1)) {
             student.risk_level = testData.riskLevel;
@@ -223,10 +244,19 @@ window.DB = (function() {
       }
 
       saveLocalData(data);
+
+      if (isSupabaseMode && supabaseClient) {
+        try {
+          await supabaseClient.from("smhc_psych_tests").insert([record]);
+        } catch (e) {
+          console.warn("[DB] Supabase 검사 저장 폴백:", e);
+        }
+      }
+
       return record;
     },
 
-    // 심리검사 엑셀/CSV 일괄 추가
+    // 심리검사 일괄 추가
     bulkAddTests: async function(records) {
       const data = getLocalData();
       const created = [];
@@ -240,7 +270,6 @@ window.DB = (function() {
         data.tests.unshift(item);
         created.push(item);
 
-        // 학생 위험도 연동
         if (rec.client_id && rec.riskLevel) {
           const student = data.students.find(s => s.id === rec.client_id);
           if (student) {
@@ -252,11 +281,31 @@ window.DB = (function() {
         }
       }
       saveLocalData(data);
+
+      if (isSupabaseMode && supabaseClient) {
+        try {
+          await supabaseClient.from("smhc_psych_tests").insert(created);
+        } catch (e) {
+          console.warn("[DB] Supabase 일괄 저장 폴백:", e);
+        }
+      }
+
       return created;
     },
 
     // 모니터링 일지 목록
     getMonitoringLogs: async function(filter = {}) {
+      if (isSupabaseMode && supabaseClient) {
+        try {
+          let query = supabaseClient.from("smhc_monitoring_logs").select("*").order("session_date", { ascending: false });
+          if (filter.client_id) query = query.eq("client_id", filter.client_id);
+          const { data, error } = await query;
+          if (!error && data && data.length > 0) return data;
+        } catch (err) {
+          console.warn("[DB] Supabase 조회 폴백:", err);
+        }
+      }
+
       const data = getLocalData();
       let list = [...data.monitoringLogs];
       if (filter.client_id) list = list.filter(l => l.client_id === filter.client_id);
@@ -274,7 +323,6 @@ window.DB = (function() {
       };
       data.monitoringLogs.unshift(record);
 
-      // 학생 현재 위험도 상태 업데이트
       if (logData.client_id && logData.current_risk) {
         const student = data.students.find(s => s.id === logData.client_id);
         if (student) {
@@ -283,16 +331,23 @@ window.DB = (function() {
       }
 
       saveLocalData(data);
+
+      if (isSupabaseMode && supabaseClient) {
+        try {
+          await supabaseClient.from("smhc_monitoring_logs").insert([record]);
+        } catch (e) {
+          console.warn("[DB] Supabase 모니터링 저장 폴백:", e);
+        }
+      }
+
       return record;
     },
 
     // 종합 통계 산출
     getAggregatedStats: async function(centerId = "all") {
-      const data = getLocalData();
-      let students = data.students;
-      if (centerId !== "all") {
-        students = students.filter(s => s.center_id === centerId);
-      }
+      const students = await this.getClients(centerId !== "all" ? { center_id: centerId } : {});
+      const tests = await this.getTests();
+      const logs = await this.getMonitoringLogs();
 
       const totalStudents = students.length;
       const severeCount = students.filter(s => s.risk_level === "SEVERE").length;
@@ -300,7 +355,6 @@ window.DB = (function() {
       const mildCount = students.filter(s => s.risk_level === "MILD").length;
       const normalCount = students.filter(s => s.risk_level === "NORMAL").length;
 
-      // 시군별 분포
       const regionDistribution = {};
       window.APP_CONFIG.regions.forEach(r => {
         if (centerId === "all" || r.centerId === centerId) {
@@ -314,7 +368,6 @@ window.DB = (function() {
         }
       });
 
-      // 학교급별 분포
       const schoolLevelStats = { 초등학교: 0, 중학교: 0, 고등학교: 0, 기타: 0 };
       students.forEach(s => {
         if (schoolLevelStats[s.school_level] !== undefined) {
@@ -324,7 +377,6 @@ window.DB = (function() {
         }
       });
 
-      // 주 호소문제별 분포
       const concernStats = {};
       students.forEach(s => {
         const c = s.main_concern || "기타";
@@ -342,8 +394,8 @@ window.DB = (function() {
         regionDistribution,
         schoolLevelStats,
         concernStats,
-        totalTests: data.tests.length,
-        totalLogs: data.monitoringLogs.length
+        totalTests: tests.length,
+        totalLogs: logs.length
       };
     }
   };

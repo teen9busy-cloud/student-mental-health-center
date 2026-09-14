@@ -6,10 +6,10 @@ window.APP_CONFIG = {
   appName: "경남 학생정신건강 전담센터 통합관리 플랫폼",
   version: "1.0.0 (Demo)",
   
-  // Supabase 기본 설정 (사용자가 브라우저 모달에서 변경하거나 기본 Demo 모드로 구동)
+  // Supabase 클라우드 기본 설정
   supabase: {
-    url: localStorage.getItem("smhc_supabase_url") || "",
-    anonKey: localStorage.getItem("smhc_supabase_key") || ""
+    url: localStorage.getItem("smhc_supabase_url") || "https://jrpbdhhnyyjsuohnvapu.supabase.co",
+    anonKey: localStorage.getItem("smhc_supabase_key") || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpycGJkaGhueXlqc3VvaG52YXB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1NDU4NzcsImV4cCI6MjEwMDEyMTg3N30.A3AzUOpriCJ2P4BBMR2tev13HCRJvoFr7_wt3_OBa2Q"
   },
 
   // 전담센터 정의
@@ -105,7 +105,6 @@ window.APP_CONFIG = {
         { key: "deliberation", name: "자살/자해생각", max: 20 }
       ],
       evaluate: function(score, subscales) {
-        // 자살/자해 생각 점수가 높으면 즉시 고위험
         if (subscales && subscales.deliberation >= 4) {
           return { verdict: "HIGH_RISK", label: "고위험(위기군)", riskLevel: "SEVERE" };
         }
@@ -159,10 +158,7 @@ window.APP_CONFIG = {
     }
   },
 
-  // 학교급
   schoolLevels: ["초등학교", "중학교", "고등학교", "특수학교"],
-
-  // 의뢰 경로
   referralSources: [
     "Wee클래스(학교)",
     "Wee센터(교육지원청)",
@@ -171,8 +167,6 @@ window.APP_CONFIG = {
     "병원 소아청소년과 연계",
     "기타"
   ],
-
-  // 주 호소문제 분류
   concernCategories: [
     "우울/무기력",
     "불안/공황/사회불안",
@@ -183,8 +177,6 @@ window.APP_CONFIG = {
     "학업 및 진로 스트레스",
     "가정불화/정서적 방임"
   ],
-
-  // 모니터링 접촉 형태
   contactTypes: {
     FACE_TO_FACE: { label: "센터 대면상담", icon: "👤" },
     PHONE: { label: "전화/화상 모니터링", icon: "📞" },
