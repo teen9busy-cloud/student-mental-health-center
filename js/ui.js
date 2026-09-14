@@ -92,17 +92,80 @@ window.UI = (function() {
     return html;
   }
 
+  const ROLE_CONFIGS = {
+    dr_kim: {
+      title: "🩺 김진우 센터장 (소아청소년정신과 전문의)",
+      badge: "의사 / 센터장 총괄 결재",
+      desc: "고위험 위기 학생의 정신과적 임상 소견 결재, 약물치료 및 병원 외래진료 연계를 최종 승인하고 전담센터 전체 운영을 총괄합니다.",
+      autoTab: "dashboard",
+      isEdu: false
+    },
+    psych_park: {
+      title: "🧠 박서연 임상심리사 (1급 정신건강임상심리사)",
+      badge: "심리검사 / 수치화 전담",
+      desc: "정서행동 2차 심층검사(AMPQ-II), 우울(K-BDI-II), 불안, CBCL 척도 수치화 및 엑셀 일괄 업로드·임상 평가서 작성을 전담합니다.",
+      autoTab: "tests",
+      isEdu: false
+    },
+    social_lee: {
+      title: "🤝 이민호 사회복지사 (1급 정신건강사회복지사)",
+      badge: "사례관리 / 모니터링 전담",
+      desc: "Wee클래스·교육청 의뢰 학생 신규 접수 등록, 학교 및 가정 방문 모니터링 상담 일지 작성, 학생 안전망 연계를 전담합니다.",
+      autoTab: "clients",
+      isEdu: false
+    },
+    admin_edu: {
+      title: "🏛️ 정재훈 장학사 (경상남도교육청 교육복지과)",
+      badge: "경남교육청 장학 / 실적 모니터링 (열람 전용)",
+      desc: "경남 18개 시·군 관할 학교 위기 현황 통계 모니터링 및 교육청 공식 사업실적보고서(CSV) 다운로드 전용 모드입니다. (학생 개인정보 보호 마스킹)",
+      autoTab: "stats",
+      isEdu: true
+    }
+  };
+
+  // 현재 역할 배너 업데이트
+  function updateRoleBanner() {
+    const banner = document.getElementById("roleGuideBanner");
+    if (!banner) return;
+    const cfg = ROLE_CONFIGS[currentRole.id] || ROLE_CONFIGS.dr_kim;
+    banner.className = `role-banner role-${currentRole.id}`;
+    banner.innerHTML = `
+      <div>
+        <div class="role-banner-title">
+          <span>${cfg.title}</span>
+          <span class="role-banner-badge">${cfg.badge}</span>
+        </div>
+        <div class="role-banner-desc">${cfg.desc}</div>
+      </div>
+      <div style="font-size:12px;opacity:0.8;white-space:nowrap;margin-left:14px;background:rgba(255,255,255,0.4);padding:4px 8px;border-radius:6px">
+        시연 중 ⚡
+      </div>
+    `;
+
+    // 교육청 모드일 때 학생 등록 버튼 제어 (열람 전용)
+    const btnNewStu = document.querySelector("#pane-clients .panel-header .btn-primary");
+    if (btnNewStu) {
+      if (cfg.isEdu) {
+        btnNewStu.style.display = "none";
+      } else {
+        btnNewStu.style.display = "inline-flex";
+      }
+    }
+  }
+
   // 현재 사용자 역할 설정
   function setRole(roleId) {
     const role = window.APP_CONFIG.demoRoles.find(r => r.id === roleId);
     if (role) {
       currentRole = role;
-      const roleLabel = document.getElementById("currentRoleText");
-      if (roleLabel) roleLabel.textContent = role.name;
-      showToast(`${role.label}로 전환되었습니다.`, "info");
+      const cfg = ROLE_CONFIGS[roleId] || ROLE_CONFIGS.dr_kim;
+      updateRoleBanner();
+      showToast(`${cfg.title} 모드로 전환되었습니다.`, "info");
       
-      // 역할에 따른 화면 갱신
-      if (window.renderDashboard) window.renderDashboard();
+      // 해당 역할에 최적화된 탭으로 자동 이동
+      if (cfg.autoTab) {
+        switchTab(cfg.autoTab);
+      }
     }
   }
 
@@ -130,6 +193,7 @@ window.UI = (function() {
     setRole,
     getCurrentRole: () => currentRole,
     getActiveTab: () => activeTab,
-    updateDbStatusBadge
+    updateDbStatusBadge,
+    updateRoleBanner
   };
 })();

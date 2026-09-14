@@ -40,10 +40,16 @@
       const centerName = s.center_id === "jinju" ? "진주(서부)" : "창원(동부)";
       const riskBadge = window.UI.renderRiskBadge(s.risk_level);
 
+      const isEdu = window.UI.getCurrentRole().role === "VIEWER";
+      let displayName = s.name;
+      if (isEdu && displayName.length >= 2) {
+        displayName = displayName[0] + "*" + (displayName.length > 2 ? displayName.slice(2) : "");
+      }
+
       return `
         <tr>
           <td><strong style="color:var(--primary)">${s.client_code}</strong></td>
-          <td><strong>${s.name}</strong> (${s.gender})</td>
+          <td><strong>${displayName}</strong> (${s.gender})</td>
           <td>${regionName} / <span style="font-size:12px;color:var(--text-sub)">${centerName}</span></td>
           <td>${s.school_name} (${s.grade}학년)</td>
           <td><span style="font-size:13px;background:#f1f5f9;padding:3px 8px;border-radius:4px">${s.main_concern}</span></td>
@@ -139,7 +145,53 @@
       }
     }
 
+    // 센터장(전문의) 전용 자문 박스 표시 제어
+    const consultBox = document.getElementById("doctorConsultationBox");
+    if (consultBox) {
+      const isDoctor = window.UI.getCurrentRole().role === "DIRECTOR";
+      consultBox.style.display = isDoctor ? "block" : "none";
+    }
+
     window.UI.openModal("modalStudentDetail");
+  }
+
+  // 센터장(의사) 모드에서 학생 상세창의 전문의 자문 소견 저장
+  async function saveDoctorOpinion() {
+    if (!selectedStudentId) return;
+    const inputEl = document.getElementById("doctorOpinionInput");
+    const opinionText = inputEl ? inputEl.value.trim() : "";
+    if (!opinionText) {
+      window.UI.showToast("전문의 자문 소견 내용을 입력해 주세요.", "warn");
+      return;
+    }
+
+    const student = await window.DB.getClientById(selectedStudentId);
+    if (!student) return;
+
+    const newLog = {
+      client_id: student.id,
+      client_name: student.name,
+      session_date: new Date().toISOString().split("T")[0],
+      session_no: (student.monitoringLogs ? student.monitoringLogs.length : 0) + 1,
+      contact_type: "HOSPITAL_LINK",
+      current_risk: student.risk_level,
+      worker: window.UI.getCurrentRole().name,
+      session_summary: "[소아청소년정신과 전문의 자문 결재 완료]",
+      student_status: "전문의 종합 임상 진단 검토 완료",
+      intervention_details: "병원 외래 진료 연계 및 맞춤형 집중 모니터링 승인",
+      doctor_opinion: opinionText
+    };
+
+    try {
+      await window.DB.addMonitoringLog(newLog);
+      window.UI.showToast("전문의 자문 소견이 Supabase DB에 성공적으로 결재 등록되었습니다!", "success");
+      inputEl.value = "";
+      viewStudentDetail(selectedStudentId);
+      if (window.renderDashboard) window.renderDashboard();
+    } catch(e) {
+      console.error(e);
+      window.UI.showToast("자문 저장 중 오류가 발생했습니다.", "error");
+    }
   }
 
   // 신규 학생 등록 저장
@@ -233,6 +285,7 @@
 
   window.renderClientsList = renderClientsList;
   window.viewStudentDetail = viewStudentDetail;
+  window.saveDoctorOpinion = saveDoctorOpinion;
   window.openAddTestForCurrentStudent = openAddTestForCurrentStudent;
   window.openAddLogForCurrentStudent = openAddLogForCurrentStudent;
 })();

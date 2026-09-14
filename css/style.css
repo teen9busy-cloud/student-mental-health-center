@@ -271,8 +271,62 @@ nav.app-tabs button.active {
 }
 
 /* ==============================================================================
-   대시보드 KPI 카드 그리드
+   역할별 권한 안내 배너
    ============================================================================== */
+.role-banner {
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s ease;
+  border-left: 5px solid var(--primary);
+}
+
+.role-banner.role-dr_kim {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #1e3a8a;
+}
+.role-banner.role-psych_park {
+  background: #f5f3ff;
+  border-color: #7c3aed;
+  color: #4c1d95;
+}
+.role-banner.role-social_lee {
+  background: #f0fdf4;
+  border-color: #16a34a;
+  color: #14532d;
+}
+.role-banner.role-admin_edu {
+  background: #fffbeb;
+  border-color: #d97706;
+  color: #78350f;
+}
+
+.role-banner-title {
+  font-size: 15.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.role-banner-desc {
+  font-size: 13.5px;
+  opacity: 0.9;
+}
+
+.role-banner-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));

@@ -142,6 +142,44 @@ window.DB = (function() {
 
     // 내담자 상세 조회
     getClientById: async function(id) {
+      if (isSupabaseMode && supabaseClient) {
+        try {
+          // UUID 또는 client_code로 조회
+          let query = supabaseClient.from("smhc_clients").select("*");
+          // id가 UUID 형태인지 확인
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+          if (isUuid) {
+            query = query.eq("id", id);
+          } else {
+            query = query.eq("client_code", id);
+          }
+          const { data: student, error } = await query.maybeSingle();
+
+          if (!error && student) {
+            const { data: tests } = await supabaseClient
+              .from("smhc_psych_tests")
+              .select("*")
+              .or(`client_id.eq.${student.id},client_code.eq.${student.client_code}`)
+              .order("test_date", { ascending: false });
+
+            const { data: logs } = await supabaseClient
+              .from("smhc_monitoring_logs")
+              .select("*")
+              .or(`client_id.eq.${student.id},client_name.eq.${student.name}`)
+              .order("session_date", { ascending: false });
+
+            return {
+              ...student,
+              tests: tests || [],
+              monitoringLogs: logs || []
+            };
+          }
+        } catch (err) {
+          console.warn("[DB] Supabase 상세 조회 폴백:", err);
+        }
+      }
+
+      // Local Demo Mode 폴백
       const data = getLocalData();
       const student = data.students.find(s => s.id === id || s.client_code === id);
       if (!student) return null;
@@ -170,24 +208,42 @@ window.DB = (function() {
         ...clientData
       };
 
-      data.students.unshift(record);
-      saveLocalData(data);
-
       if (isSupabaseMode && supabaseClient) {
         try {
-          await supabaseClient.from("smhc_clients").insert([record]);
+          const insertPayload = { ...clientData, client_code: clientCode };
+          delete insertPayload.id;
+          const { data: inserted, error } = await supabaseClient
+            .from("smhc_clients")
+            .insert([insertPayload])
+            .select()
+            .single();
+          if (!error && inserted) {
+            record.id = inserted.id;
+          }
         } catch (e) {
           console.warn("[DB] Supabase 저장 폴백:", e);
         }
       }
 
+      data.students.unshift(record);
+      saveLocalData(data);
       return record;
     },
 
     // 학생 수정
     updateClient: async function(id, updates) {
+      if (isSupabaseMode && supabaseClient) {
+        try {
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+          let q = supabaseClient.from("smhc_clients").update(updates);
+          if (isUuid) q = q.eq("id", id);
+          else q = q.eq("client_code", id);
+          await q;
+        } catch(e) {}
+      }
+
       const data = getLocalData();
-      const idx = data.students.findIndex(s => s.id === id);
+      const idx = data.students.findIndex(s => s.id === id || s.client_code === id);
       if (idx !== -1) {
         data.students[idx] = { ...data.students[idx], ...updates, updated_at: new Date().toISOString() };
         saveLocalData(data);
@@ -197,9 +253,19 @@ window.DB = (function() {
 
     // 학생 삭제
     deleteClient: async function(id) {
+      if (isSupabaseMode && supabaseClient) {
+        try {
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+          let q = supabaseClient.from("smhc_clients").delete();
+          if (isUuid) q = q.eq("id", id);
+          else q = q.eq("client_code", id);
+          await q;
+        } catch(e) {}
+      }
+
       const data = getLocalData();
-      data.students = data.students.filter(s => s.id !== id);
-      data.tests = data.tests.filter(t => t.client_id !== id);
+      data.students = data.students.filter(s => s.id !== id && s.client_code !== id);
+      data.tests = data.tests.filter(t => t.client_id !== id && t.client_code !== id);
       data.monitoringLogs = data.monitoringLogs.filter(l => l.client_id !== id);
       saveLocalData(data);
       return true;
@@ -210,7 +276,11 @@ window.DB = (function() {
       if (isSupabaseMode && supabaseClient) {
         try {
           let query = supabaseClient.from("smhc_psych_tests").select("*").order("test_date", { ascending: false });
-          if (filter.client_id) query = query.eq("client_id", filter.client_id);
+          if (filter.client_id) {
+            const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(filter.client_id);
+            if (isUuid) query = query.eq("client_id", filter.client_id);
+            else query = query.eq("client_code", filter.client_id);
+          }
           if (filter.test_type) query = query.eq("test_type", filter.test_type);
           if (filter.verdict) query = query.eq("verdict", filter.verdict);
           const { data, error } = await query;
@@ -222,7 +292,7 @@ window.DB = (function() {
 
       const data = getLocalData();
       let list = [...data.tests];
-      if (filter.client_id) list = list.filter(t => t.client_id === filter.client_id);
+      if (filter.client_id) list = list.filter(t => t.client_id === filter.client_id || t.client_code === filter.client_id);
       if (filter.test_type) list = list.filter(t => t.test_type === filter.test_type);
       if (filter.verdict) list = list.filter(t => t.verdict === filter.verdict);
       return list.sort((a, b) => new Date(b.test_date) - new Date(a.test_date));
@@ -237,28 +307,30 @@ window.DB = (function() {
         created_at: new Date().toISOString(),
         ...testData
       };
-      data.tests.unshift(record);
-
-      if (testData.client_id && testData.riskLevel) {
-        const student = data.students.find(s => s.id === testData.client_id);
-        if (student) {
-          const rank = { NORMAL: 1, MILD: 2, MODERATE: 3, SEVERE: 4 };
-          if (rank[testData.riskLevel] > (rank[student.risk_level] || 1)) {
-            student.risk_level = testData.riskLevel;
-          }
-        }
-      }
-
-      saveLocalData(data);
 
       if (isSupabaseMode && supabaseClient) {
         try {
-          await supabaseClient.from("smhc_psych_tests").insert([record]);
+          const insertPayload = { ...testData };
+          delete insertPayload.id;
+          delete insertPayload.riskLevel;
+          // client_id가 UUID가 아니면 null 처리하고 client_code로 유지
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(insertPayload.client_id);
+          if (!isUuid) delete insertPayload.client_id;
+          const { data: inserted, error } = await supabaseClient
+            .from("smhc_psych_tests")
+            .insert([insertPayload])
+            .select()
+            .single();
+          if (!error && inserted) {
+            record.id = inserted.id;
+          }
         } catch (e) {
           console.warn("[DB] Supabase 검사 저장 폴백:", e);
         }
       }
 
+      data.tests.unshift(record);
+      saveLocalData(data);
       return record;
     },
 
@@ -327,25 +399,28 @@ window.DB = (function() {
         created_at: new Date().toISOString(),
         ...logData
       };
-      data.monitoringLogs.unshift(record);
-
-      if (logData.client_id && logData.current_risk) {
-        const student = data.students.find(s => s.id === logData.client_id);
-        if (student) {
-          student.risk_level = logData.current_risk;
-        }
-      }
-
-      saveLocalData(data);
 
       if (isSupabaseMode && supabaseClient) {
         try {
-          await supabaseClient.from("smhc_monitoring_logs").insert([record]);
+          const insertPayload = { ...logData };
+          delete insertPayload.id;
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(insertPayload.client_id);
+          if (!isUuid) delete insertPayload.client_id;
+          const { data: inserted, error } = await supabaseClient
+            .from("smhc_monitoring_logs")
+            .insert([insertPayload])
+            .select()
+            .single();
+          if (!error && inserted) {
+            record.id = inserted.id;
+          }
         } catch (e) {
           console.warn("[DB] Supabase 모니터링 저장 폴백:", e);
         }
       }
 
+      data.monitoringLogs.unshift(record);
+      saveLocalData(data);
       return record;
     },
 
