@@ -8,8 +8,8 @@ window.APP_CONFIG = {
   
   // Supabase 클라우드 설정 (새로 생성된 student-mental-health 전용 프로젝트)
   supabase: {
-    url: localStorage.getItem("smhc_supabase_url") || "https://ozgosuxpdzcbzyxkldwa.supabase.co",
-    anonKey: localStorage.getItem("smhc_supabase_key") || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Z29zdXhwZHpjYnp5eGtsZHdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzMzgzMjMsImV4cCI6MjEwNDkxNDMyM30.-6zzF595EpZ7gXvQJNL1_b9FsX96bPhyg0RIuKOhQ8U"
+    url: "https://ozgosuxpdzcbzyxkldwa.supabase.co",
+    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Z29zdXhwZHpjYnp5eGtsZHdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzMzgzMjMsImV4cCI6MjEwNDkxNDMyM30.-6zzF595EpZ7gXvQJNL1_b9FsX96bPhyg0RIuKOhQ8U"
   },
 
   // 전담센터 정의
