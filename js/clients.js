@@ -262,7 +262,25 @@
     return found ? found.id : (defaultCenter === "changwon" ? "changwon" : "jinju");
   }
 
-  // 위기도 명칭 -> DB 코드 변환 헬퍼
+  // 성별 명칭 유연 처리 헬퍼 (남/여/M/F/남자/여자 복사붙여넣기 지원)
+  function normalizeGender(raw) {
+    if (!raw) return "남";
+    const str = String(raw).trim().toUpperCase();
+    if (str.includes("여") || str === "F" || str === "FEMALE" || str === "여자") return "여";
+    return "남";
+  }
+
+  // 학교급 명칭 유연 처리 헬퍼 (초등/초/중학/중/고등/고 복사붙여넣기 지원)
+  function normalizeSchoolLevel(raw) {
+    if (!raw) return "중학교";
+    const str = String(raw).trim();
+    if (str.includes("초")) return "초등학교";
+    if (str.includes("고")) return "고등학교";
+    if (str.includes("특수")) return "특수학교";
+    return "중학교";
+  }
+
+  // 위기도 명칭 -> DB 코드 변환 헬퍼 (고위험/주의/관심/일반 등 복사붙여넣기 지원)
   function normalizeRiskLevel(raw) {
     if (!raw) return "MODERATE";
     const str = String(raw).toUpperCase();
@@ -466,8 +484,7 @@
           const name = getExcelCellText(row.getCell(1));
           if (!name) return;
 
-          const genderRaw = getExcelCellText(row.getCell(2));
-          const gender = genderRaw.includes("여") ? "여" : "남";
+          const gender = normalizeGender(getExcelCellText(row.getCell(2)));
 
           let birthDate = getExcelCellText(row.getCell(3));
           if (birthDate) {
@@ -483,10 +500,7 @@
           const regionRaw = getExcelCellText(row.getCell(5));
           const regionId = normalizeRegionId(regionRaw, centerId);
 
-          const schoolLevelRaw = getExcelCellText(row.getCell(6)) || "중학교";
-          const schoolLevel = schoolLevelRaw.includes("초등") ? "초등학교" :
-                              schoolLevelRaw.includes("고등") ? "고등학교" :
-                              schoolLevelRaw.includes("특수") ? "특수학교" : "중학교";
+          const schoolLevel = normalizeSchoolLevel(getExcelCellText(row.getCell(6)));
 
           const schoolName = getExcelCellText(row.getCell(7));
           if (!schoolName) return;
@@ -554,15 +568,12 @@
         if (row.length < 5) continue;
 
         const name = row[0];
-        const gender = row[1] ? (row[1].includes("여") ? "여" : "남") : "남";
+        const gender = normalizeGender(row[1]);
         const birthDate = row[2] || null;
         const centerRaw = row[3] || "jinju";
         const centerId = centerRaw.includes("창원") || centerRaw.toLowerCase().includes("changwon") ? "changwon" : "jinju";
         const regionId = normalizeRegionId(row[4], centerId);
-        const schoolLevelRaw = row[5] || "중학교";
-        const schoolLevel = schoolLevelRaw.includes("초등") ? "초등학교" :
-                            schoolLevelRaw.includes("고등") ? "고등학교" :
-                            schoolLevelRaw.includes("특수") ? "특수학교" : "중학교";
+        const schoolLevel = normalizeSchoolLevel(row[5]);
         const schoolName = row[6] || "";
         const gradeMatch = String(row[7] || "1").match(/\d+/);
         const grade = gradeMatch ? parseInt(gradeMatch[0], 10) : 1;
