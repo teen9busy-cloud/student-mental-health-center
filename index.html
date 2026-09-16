@@ -625,76 +625,76 @@
         <button class="modal-close" onclick="window.UI.closeModal('modalStudentDetail')">&times;</button>
       </div>
       <div class="modal-body">
-        <!-- 학생 기본 정보 (형태주의 인지 심리학 기반 독립 카드 그리드) -->
-        <div style="background:#ffffff;border:1.5px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:24px;box-shadow:0 2px 5px rgba(0,0,0,0.03)">
+        <!-- 학생 기본 정보 (형태주의 인지 심리학 기반 모던 클리니컬 격자 카드) -->
+        <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;padding:16px 18px;margin-bottom:22px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">
           <!-- 1행: 주요 식별 정보 (학교, 지역/센터, 위기도) -->
-          <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:12px;margin-bottom:12px">
+          <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:10px;margin-bottom:10px">
             <!-- 소속 학교 -->
-            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px">
-              <div style="font-size:12.5px;font-weight:700;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:5px">
-                <span style="background:#e2e8f0;padding:2px 7px;border-radius:4px;color:#334155">🏫 소속 학교</span>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:11px 14px">
+              <div style="font-size:12.5px;font-weight:600;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:5px">
+                <span>🏫</span> 소속 학교 및 학년
               </div>
               <div style="font-size:15px;font-weight:700;color:#1e293b" id="detailStudentSchool">-</div>
             </div>
 
             <!-- 지역 및 관할 센터 -->
-            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px">
-              <div style="font-size:12.5px;font-weight:700;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:5px">
-                <span style="background:#e2e8f0;padding:2px 7px;border-radius:4px;color:#334155">📍 소속 시·군 / 센터</span>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:11px 14px">
+              <div style="font-size:12.5px;font-weight:600;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:5px">
+                <span>📍</span> 관할 지역 / 센터
               </div>
               <div style="font-size:14.5px;font-weight:600;color:#1e293b" id="detailStudentRegion">-</div>
             </div>
 
             <!-- 현재 위기도 판정 -->
-            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;justify-content:center">
-              <div style="font-size:12.5px;font-weight:700;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:5px">
-                <span style="background:#e2e8f0;padding:2px 7px;border-radius:4px;color:#334155">⚠️ 판정 위기도</span>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:11px 14px;display:flex;flex-direction:column;justify-content:center">
+              <div style="font-size:12.5px;font-weight:600;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:5px">
+                <span>⚠️</span> 현재 판정 위기도
               </div>
               <div id="detailStudentRisk" style="padding-top:2px">-</div>
             </div>
           </div>
 
           <!-- 2행: 임상 의뢰 및 비상연락망 (주호소, 의뢰경로, 보호자) -->
-          <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:12px;margin-bottom:12px">
-            <!-- 주 호소 문제 (강조 뱃지 셀) -->
-            <div style="background:#f0fdfa;border:1.5px solid #99f6e4;border-radius:8px;padding:12px 14px">
-              <div style="font-size:12.5px;font-weight:700;color:#0d9488;margin-bottom:4px;display:flex;align-items:center;gap:5px">
-                <span style="background:#ccfbf1;padding:2px 7px;border-radius:4px;color:#0f766e">🎯 주 호소 문제</span>
+          <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:10px;margin-bottom:10px">
+            <!-- 주 호소 문제 (단정하고 깊이감 있는 네이비) -->
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:11px 14px">
+              <div style="font-size:12.5px;font-weight:600;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:5px">
+                <span>🎯</span> 주 호소 문제
               </div>
-              <div style="font-size:15px;font-weight:700;color:#134e4a" id="detailStudentConcern">-</div>
+              <div style="font-size:15px;font-weight:700;color:#1e3a8a" id="detailStudentConcern">-</div>
             </div>
 
             <!-- 의뢰 경로 -->
-            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px">
-              <div style="font-size:12.5px;font-weight:700;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:5px">
-                <span style="background:#e2e8f0;padding:2px 7px;border-radius:4px;color:#334155">📋 의뢰 경로</span>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:11px 14px">
+              <div style="font-size:12.5px;font-weight:600;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:5px">
+                <span>📋</span> 의뢰 경로
               </div>
               <div style="font-size:14.5px;font-weight:600;color:#1e293b" id="detailStudentReferral">-</div>
             </div>
 
             <!-- 보호자 및 비상연락처 -->
-            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px">
-              <div style="font-size:12.5px;font-weight:700;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:5px">
-                <span style="background:#e2e8f0;padding:2px 7px;border-radius:4px;color:#334155">👨‍👩‍👦 보호자 연락처</span>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:11px 14px">
+              <div style="font-size:12.5px;font-weight:600;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:5px">
+                <span>👨‍👩‍👦</span> 보호자 연락처
               </div>
               <div style="font-size:14.5px;font-weight:600;color:#1e293b" id="detailStudentParent">-</div>
             </div>
           </div>
 
           <!-- 3행: 센터 지원팀 및 접수 메모 -->
-          <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:12px">
+          <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:10px">
             <!-- 담당 지원팀 -->
-            <div style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:12px 14px">
-              <div style="font-size:12.5px;font-weight:700;color:#475569;margin-bottom:4px;display:flex;align-items:center;gap:5px">
-                <span style="background:#e2e8f0;padding:2px 7px;border-radius:4px;color:#334155">👥 센터 전담팀</span>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:11px 14px">
+              <div style="font-size:12.5px;font-weight:600;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:5px">
+                <span>👥</span> 센터 전담 지원팀
               </div>
               <div style="font-size:14px;color:#1e293b;font-weight:600;line-height:1.4" id="detailStudentWorkers">-</div>
             </div>
 
             <!-- 접수 메모 -->
-            <div style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:12px 14px">
-              <div style="font-size:12.5px;font-weight:700;color:#475569;margin-bottom:4px;display:flex;align-items:center;gap:5px">
-                <span style="background:#e2e8f0;padding:2px 7px;border-radius:4px;color:#334155">📝 초기 접수 메모</span>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:11px 14px">
+              <div style="font-size:12.5px;font-weight:600;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:5px">
+                <span>📝</span> 초기 접수 메모
               </div>
               <div style="font-size:14px;color:#334155;line-height:1.45" id="detailStudentNotes">-</div>
             </div>

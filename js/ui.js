@@ -48,6 +48,24 @@ window.UI = (function() {
     }
   }
 
+  // 키보드 ESC 키 입력 시 현재 열려 있는 팝업 모달 닫기
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      const openModals = document.querySelectorAll(".modal-backdrop.open");
+      if (openModals.length > 0) {
+        const lastModal = openModals[openModals.length - 1];
+        closeModal(lastModal.id);
+      }
+    }
+  });
+
+  // 팝업 바깥 어두운 배경(Backdrop) 클릭 시 모달 닫기
+  document.addEventListener("click", (e) => {
+    if (e.target && e.target.classList && e.target.classList.contains("modal-backdrop") && e.target.classList.contains("open")) {
+      closeModal(e.target.id);
+    }
+  });
+
   // 탭 전환
   function switchTab(tabId) {
     activeTab = tabId;
