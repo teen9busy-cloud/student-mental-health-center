@@ -74,13 +74,6 @@ window.APP_CONFIG = {
       name: "이민호 사회복지사 (1급 정신건강사회복지사)",
       centerId: "jinju",
       label: "사회복지사 모드"
-    },
-    {
-      id: "admin_edu",
-      role: "VIEWER",
-      name: "정재훈 장학사 (경남교육청 교육복지과)",
-      centerId: "all",
-      label: "교육청(장학사) 모드"
     }
   ],
 

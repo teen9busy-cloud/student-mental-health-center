@@ -40,19 +40,15 @@
       const centerName = s.center_id === "jinju" ? "진주(서부)" : "창원(동부)";
       const riskBadge = window.UI.renderRiskBadge(s.risk_level);
 
-      const isEdu = window.UI.getCurrentRole().role === "VIEWER";
-      let displayName = s.name;
-      if (isEdu && displayName.length >= 2) {
-        displayName = displayName[0] + "*" + (displayName.length > 2 ? displayName.slice(2) : "");
-      }
+      const displayName = s.name;
 
       return `
         <tr>
           <td><strong style="color:var(--primary)">${s.client_code}</strong></td>
           <td><strong>${displayName}</strong> (${s.gender})</td>
-          <td>${regionName} / <span style="font-size:12px;color:var(--text-sub)">${centerName}</span></td>
+          <td>${regionName} / <span style="font-size:13.5px;color:var(--text-sub)">${centerName}</span></td>
           <td>${s.school_name} (${s.grade}학년)</td>
-          <td><span style="font-size:13px;background:#f1f5f9;padding:3px 8px;border-radius:4px">${s.main_concern}</span></td>
+          <td><span style="font-size:14px;background:#f1f5f9;padding:4px 9px;border-radius:4px">${s.main_concern}</span></td>
           <td>${s.referral_source}</td>
           <td>${riskBadge}</td>
           <td>
@@ -102,23 +98,23 @@
           const pdfFileName = t.pdf_name || t.file_name || "원본검사지.pdf";
 
           return `
-            <div style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin-bottom:10px">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                <strong style="font-size:14.5px">${testName}</strong>
+            <div style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px 18px;margin-bottom:12px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <strong style="font-size:16px">${testName}</strong>
                 <div style="display:flex;align-items:center;gap:6px">
-                  <span style="font-size:12.5px;color:var(--text-sub);margin-right:4px">${t.test_date}</span>
+                  <span style="font-size:14px;color:var(--text-sub);margin-right:4px">${t.test_date}</span>
                   ${window.UI.renderVerdictBadge(t.verdict)}
-                  <button type="button" class="btn btn-outline btn-sm" style="color:#ef4444;border-color:#fca5a5;padding:1px 6px;font-size:11px" title="검사 삭제" onclick="window.deleteTestRecord('${t.id}', '${testName}')">🗑️</button>
+                  <button type="button" class="btn btn-outline btn-sm" style="color:#ef4444;border-color:#fca5a5;padding:2px 7px;font-size:12px" title="검사 삭제" onclick="window.deleteTestRecord('${t.id}', '${testName}')">🗑️</button>
                 </div>
               </div>
-              <div style="font-size:13.5px;color:var(--text-main);margin-bottom:4px">
+              <div style="font-size:14.5px;color:var(--text-main);margin-bottom:6px">
                 총점: <strong>${t.total_score}점</strong> ${t.t_score ? `(T점수: ${t.t_score})` : ""} | 실시자: ${t.examiner || "미기재"}
               </div>
-              ${t.summary_opinion ? `<div style="font-size:13px;background:#f8fafc;padding:8px 10px;border-radius:4px;color:var(--text-sub);border-left:3px solid var(--primary);margin-bottom:6px">${t.summary_opinion}</div>` : ""}
+              ${t.summary_opinion ? `<div style="font-size:14px;background:#f8fafc;padding:10px 12px;border-radius:6px;color:var(--text-sub);border-left:3px solid var(--primary);margin-bottom:8px;line-height:1.5">${t.summary_opinion}</div>` : ""}
               ${hasPdf ? `
-                <div style="margin-top:6px;display:flex;align-items:center;gap:8px">
-                  <span class="badge" style="background:#e0e7ff;color:#1e40af;font-size:12px">📎 ${pdfFileName}</span>
-                  <button type="button" class="btn btn-outline btn-sm" style="font-size:12px;padding:3px 10px" onclick="window.viewTestPdf('${t.id}')">
+                <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+                  <span class="badge" style="background:#e0e7ff;color:#1e40af;font-size:13px">📎 ${pdfFileName}</span>
+                  <button type="button" class="btn btn-outline btn-sm" style="font-size:13px;padding:4px 12px" onclick="window.viewTestPdf('${t.id}')">
                     📄 원본 검사지(PDF) 보기
                   </button>
                 </div>
@@ -143,14 +139,14 @@
                 <div class="timeline-item">
                   <div class="timeline-dot"></div>
                   <div class="timeline-content">
-                    <div class="timeline-header">
+                    <div class="timeline-header" style="font-size:14px;margin-bottom:6px">
                       <strong>${cType.icon} ${cType.label} (제${l.session_no || 1}회기) - ${l.session_date}</strong>
                       <span>작성: ${l.worker}</span>
                     </div>
-                    <div style="font-size:13.5px;font-weight:600;margin-bottom:4px">${l.session_summary}</div>
-                    ${l.student_status ? `<div style="font-size:13px;color:var(--text-sub);margin-bottom:4px"><strong>상태:</strong> ${l.student_status}</div>` : ""}
-                    ${l.intervention_details ? `<div style="font-size:13px;color:var(--text-sub);margin-bottom:6px"><strong>개입:</strong> ${l.intervention_details}</div>` : ""}
-                    ${l.doctor_opinion ? `<div style="font-size:13px;background:#eff6ff;color:#1e40af;padding:8px 10px;border-radius:4px;border:1px solid #bfdbfe;margin-top:6px"><strong>전문의 자문:</strong> ${l.doctor_opinion}</div>` : ""}
+                    <div style="font-size:15px;font-weight:600;margin-bottom:6px">${l.session_summary}</div>
+                    ${l.student_status ? `<div style="font-size:14px;color:var(--text-sub);margin-bottom:4px"><strong>상태:</strong> ${l.student_status}</div>` : ""}
+                    ${l.intervention_details ? `<div style="font-size:14px;color:var(--text-sub);margin-bottom:6px"><strong>개입:</strong> ${l.intervention_details}</div>` : ""}
+                    ${l.doctor_opinion ? `<div style="font-size:14px;background:#eff6ff;color:#1e40af;padding:10px 12px;border-radius:6px;border:1px solid #bfdbfe;margin-top:6px;line-height:1.5"><strong>전문의 자문:</strong> ${l.doctor_opinion}</div>` : ""}
                   </div>
                 </div>
               `;

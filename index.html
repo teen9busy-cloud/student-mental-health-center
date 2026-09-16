@@ -36,10 +36,9 @@
       <div class="role-switcher">
         <label>시연 권한:</label>
         <select id="roleSelector" onchange="window.UI.setRole(this.value)">
-          <option value="dr_kim">🩺 센터장(소아청소년정신과 전문의)</option>
-          <option value="psych_park">🧠 임상심리사(심리검사/수치화)</option>
-          <option value="social_lee">🤝 사회복지사(접수/모니터링)</option>
-          <option value="admin_edu">🏛️ 경남교육청(장학사 모니터링)</option>
+          <option value="dr_kim">🩺 센터장 (소아청소년정신과 전문의)</option>
+          <option value="psych_park">🧠 임상심리사 (심리검사/수치화)</option>
+          <option value="social_lee">🤝 정신건강사회복지사 (접수/모니터링)</option>
         </select>
       </div>
 
@@ -491,7 +490,7 @@
        MODAL 1: 신규 학생 등록 모달
        ======================================================================== -->
   <div id="modalNewStudent" class="modal-backdrop">
-    <div class="modal-dialog">
+    <div class="modal-dialog wide">
       <div class="modal-header">
         <h3>신규 학생(내담자) 접수 등록</h3>
         <button class="modal-close" onclick="window.UI.closeModal('modalNewStudent')">&times;</button>
@@ -542,9 +541,10 @@
             </div>
             <div class="form-field">
               <label>학년 / 반</label>
-              <div style="display:flex;gap:6px">
-                <input type="number" name="studentGrade" class="input-control" min="1" max="6" value="1" style="width:70px">
-                <input type="text" name="studentClassRoom" class="input-control" placeholder="예: 3반">
+              <div style="display:flex;gap:8px;align-items:center">
+                <input type="number" name="studentGrade" class="input-control" min="1" max="6" value="1" style="width:80px">
+                <span style="font-size:14.5px;color:var(--text-sub)">학년</span>
+                <input type="text" name="studentClassRoom" class="input-control" placeholder="예: 3반" style="flex:1">
               </div>
             </div>
             <div class="form-field">
@@ -587,15 +587,16 @@
               </select>
             </div>
             <div class="form-field">
-              <label>담당 사회복지사 / 임상심리사</label>
-              <div style="display:flex;gap:6px">
-                <input type="text" name="studentWorker" class="input-control" value="이민호 사회복지사">
-                <input type="text" name="studentPsych" class="input-control" value="박서연 임상심리사">
-              </div>
+              <label>담당 정신건강사회복지사</label>
+              <input type="text" name="studentWorker" class="input-control" value="이민호 사회복지사">
+            </div>
+            <div class="form-field">
+              <label>담당 임상심리사</label>
+              <input type="text" name="studentPsych" class="input-control" value="박서연 임상심리사">
             </div>
             <div class="form-field full-width">
               <label>특이사항 및 접수 메모</label>
-              <textarea name="studentNotes" class="input-control" placeholder="의뢰 경위, 정서적 위험 징후, 복약 여부 등"></textarea>
+              <textarea name="studentNotes" class="input-control" style="min-height:80px" placeholder="의뢰 경위, 정서적 위험 징후, 복약 여부 등"></textarea>
             </div>
           </div>
         </div>
@@ -615,45 +616,45 @@
     <div class="modal-dialog wide">
       <div class="modal-header">
         <div>
-          <h3 id="detailStudentName">학생 상세 프로필</h3>
-          <div style="font-size:13px;color:var(--text-sub);margin-top:2px" id="detailStudentCode">STU-2026-000</div>
+          <h3 id="detailStudentName" style="font-size:22px">학생 상세 프로필</h3>
+          <div style="font-size:14px;color:var(--text-sub);margin-top:3px" id="detailStudentCode">STU-2026-000</div>
         </div>
         <button class="modal-close" onclick="window.UI.closeModal('modalStudentDetail')">&times;</button>
       </div>
       <div class="modal-body">
         <!-- 기본 정보 그리드 -->
-        <div style="background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:16px;display:grid;grid-template-columns:repeat(3, 1fr);gap:12px;margin-bottom:20px">
-          <div><span style="font-size:12.5px;color:var(--text-sub)">소속 학교:</span> <strong id="detailStudentSchool"></strong></div>
-          <div><span style="font-size:12.5px;color:var(--text-sub)">지역/센터:</span> <span id="detailStudentRegion"></span></div>
-          <div><span style="font-size:12.5px;color:var(--text-sub)">현재 위기도:</span> <span id="detailStudentRisk"></span></div>
-          <div><span style="font-size:12.5px;color:var(--text-sub)">의뢰/주호소:</span> <span id="detailStudentReferral"></span></div>
-          <div><span style="font-size:12.5px;color:var(--text-sub)">보호자:</span> <span id="detailStudentParent"></span></div>
-          <div><span style="font-size:12.5px;color:var(--text-sub)">담당팀:</span> <span id="detailStudentWorkers" style="font-size:12.5px"></span></div>
-          <div style="grid-column:1/-1;border-top:1px dashed var(--line);padding-top:8px">
-            <span style="font-size:12.5px;color:var(--text-sub)">접수 메모:</span> <span id="detailStudentNotes" style="font-size:13px"></span>
+        <div style="background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:18px 22px;display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:14px 20px;margin-bottom:24px">
+          <div style="font-size:15px"><span style="color:var(--text-sub)">소속 학교:</span> <strong id="detailStudentSchool"></strong></div>
+          <div style="font-size:15px"><span style="color:var(--text-sub)">지역/센터:</span> <span id="detailStudentRegion"></span></div>
+          <div style="font-size:15px"><span style="color:var(--text-sub)">현재 위기도:</span> <span id="detailStudentRisk"></span></div>
+          <div style="font-size:15px"><span style="color:var(--text-sub)">의뢰/주호소:</span> <span id="detailStudentReferral"></span></div>
+          <div style="font-size:15px"><span style="color:var(--text-sub)">보호자:</span> <span id="detailStudentParent"></span></div>
+          <div style="font-size:15px;grid-column:1/-1"><span style="color:var(--text-sub)">담당팀:</span> <span id="detailStudentWorkers" style="font-weight:600"></span></div>
+          <div style="grid-column:1/-1;border-top:1px dashed var(--line);padding-top:10px;font-size:14.5px">
+            <span style="color:var(--text-sub);font-weight:600">접수 메모:</span> <span id="detailStudentNotes"></span>
           </div>
         </div>
 
         <!-- 탭식 하위 뷰 (검사 이력 & 모니터링 일지) -->
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <h4 style="font-size:16px">📝 심리검사 수치화 이력</h4>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <h4 style="font-size:17px">📝 심리검사 수치화 이력</h4>
           <button class="btn btn-outline btn-sm" onclick="window.openAddTestForCurrentStudent()">+ 새 심리검사 등록</button>
         </div>
-        <div id="detailTestList" style="margin-bottom:24px"></div>
+        <div id="detailTestList" style="margin-bottom:26px"></div>
 
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <h4 style="font-size:16px">📋 모니터링 & 전문의 자문 일지</h4>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <h4 style="font-size:17px">📋 모니터링 & 전문의 자문 일지</h4>
           <button class="btn btn-outline btn-sm" onclick="window.openAddLogForCurrentStudent()">+ 새 모니터링 작성</button>
         </div>
         <div id="detailLogList"></div>
 
         <!-- 센터장(소아청소년정신과 전문의) 전용 자문 작성 섹션 -->
-        <div id="doctorConsultationBox" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:16px;margin-top:20px">
+        <div id="doctorConsultationBox" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:18px;margin-top:22px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <strong style="color:#1e40af;font-size:14.5px">🩺 소아청소년정신과 전문의(센터장) 임상 자문 및 처방·진료 연계</strong>
+            <strong style="color:#1e40af;font-size:15.5px">🩺 소아청소년정신과 전문의(센터장) 임상 자문 및 처방·진료 연계</strong>
             <span class="badge" style="background:#dbeafe;color:#1e40af">전문의 전용 권한</span>
           </div>
-          <div style="font-size:13px;color:#1e3a8a;margin-bottom:10px">
+          <div style="font-size:14px;color:#1e3a8a;margin-bottom:10px">
             본 학생의 정서행동특성 및 심리검사 결과를 종합 검토하여 임상 소견을 작성하고 병원 외래 진료 연계를 승인합니다.
           </div>
           <textarea id="doctorOpinionInput" class="input-control" style="background:#fff;border-color:#93c5fd;min-height:75px" placeholder="예: [김진우 센터장 소견] 충동성 및 우울 완화를 위한 소아청소년정신과 외래 접수 승인. 학교 Wee클래스와 주 1회 상담 연계 지속 권고."></textarea>
@@ -678,7 +679,7 @@
        MODAL 3: 개별 심리검사 등록 & 자동 수치화 모달
        ======================================================================== -->
   <div id="modalNewTest" class="modal-backdrop">
-    <div class="modal-dialog">
+    <div class="modal-dialog wide">
       <div class="modal-header">
         <h3>심리검사 결과 입력 및 자동 수치화</h3>
         <button class="modal-close" onclick="window.UI.closeModal('modalNewTest')">&times;</button>
@@ -689,20 +690,20 @@
 
             <!-- 검사지 PDF 파일 자동 파싱 & 첨부 드롭존 -->
             <div class="form-field full-width">
-              <div id="testPdfUploadArea" class="pdf-dropzone-box" style="border: 2px dashed #93c5fd; background: #eff6ff; border-radius: 8px; padding: 14px 16px; text-align: center; cursor: pointer; transition: all 0.2s">
-                <div style="font-size: 24px; margin-bottom: 2px">📄</div>
-                <div style="font-weight: 600; font-size: 13.5px; color: #1e40af">
-                  검사지 원본(PDF) 자동 분석 및 첨부 <span style="font-size:12px;font-weight:normal;color:#3b82f6">(클릭 또는 파일 드래그)</span>
+              <div id="testPdfUploadArea" class="pdf-dropzone-box" style="border: 2px dashed #93c5fd; background: #eff6ff; border-radius: 8px; padding: 18px 20px; text-align: center; cursor: pointer; transition: all 0.2s">
+                <div style="font-size: 28px; margin-bottom: 4px">📄</div>
+                <div style="font-weight: 600; font-size: 15px; color: #1e40af">
+                  검사지 원본(PDF) 자동 분석 및 첨부 <span style="font-size:13.5px;font-weight:normal;color:#3b82f6">(클릭 또는 파일 드래그)</span>
                 </div>
-                <div style="font-size: 12px; color: #64748b; margin-top: 3px">
+                <div style="font-size: 13.5px; color: #64748b; margin-top: 4px">
                   마음사랑 MMPI-2 / MMPI-A 결과지 PDF를 넣으면 <strong>0.1초 만에 척도 점수가 자동 입력</strong>되고 원본이 학생 이력에 보관됩니다.
                 </div>
                 <input type="file" id="pdfFileInput" accept=".pdf" style="display:none">
               </div>
-              <div id="pdfParseNotice" style="display:none;margin-top:8px;padding:8px 12px;background:#ecfdf5;border:1px solid #6ee7b7;border-radius:6px;font-size:12.5px;color:#065f46">
+              <div id="pdfParseNotice" style="display:none;margin-top:8px;padding:10px 14px;background:#ecfdf5;border:1px solid #6ee7b7;border-radius:6px;font-size:14px;color:#065f46">
               </div>
-              <div style="margin-top:6px;display:flex;justify-content:flex-end">
-                <a href="윤서진_MMPI_결과지.pdf" download="윤서진_MMPI_결과지.pdf" class="btn btn-outline btn-sm" style="text-decoration:none;font-size:11.5px;padding:3px 10px;color:#1e40af;border-color:#93c5fd;background:#fff;display:inline-flex;align-items:center;gap:4px">
+              <div style="margin-top:8px;display:flex;justify-content:flex-end">
+                <a href="윤서진_MMPI_결과지.pdf" download="윤서진_MMPI_결과지.pdf" class="btn btn-outline btn-sm" style="text-decoration:none;font-size:13px;padding:5px 12px;color:#1e40af;border-color:#93c5fd;background:#fff;display:inline-flex;align-items:center;gap:5px">
                   📥 시연용 가상 검사지 (윤서진_MMPI_결과지.pdf) 다운로드
                 </a>
               </div>
@@ -787,7 +788,7 @@
       <div class="modal-header">
         <div>
           <h3>심리검사 결과 엑셀/CSV 일괄 업로드</h3>
-          <div style="font-size:13px;color:var(--text-sub)">학교 또는 외부 검사기관의 결과 파일을 일괄 업로드하여 자동 수치화합니다.</div>
+          <div style="font-size:14.5px;color:var(--text-sub);margin-top:3px">학교 또는 외부 검사기관의 결과 파일을 일괄 업로드하여 자동 수치화합니다.</div>
         </div>
         <button class="modal-close" onclick="window.UI.closeModal('modalUploadTests')">&times;</button>
       </div>
@@ -801,7 +802,7 @@
         </div>
 
         <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:13px;color:var(--text-sub)">표준 양식: 검사종류(AMPQ-II, BDI-II, RCMAS 등)는 엑셀 드롭다운 목록에서 바로 선택하실 수 있습니다.</span>
+          <span style="font-size:14px;color:var(--text-sub)">표준 양식: 검사종류(AMPQ-II, BDI-II, RCMAS 등)는 엑셀 드롭다운 목록에서 바로 선택하실 수 있습니다.</span>
           <button type="button" id="btnDownloadTemplate" class="btn btn-outline btn-sm">
             📥 표준 엑셀(XLSX) 템플릿 받기 (드롭다운 지원)
           </button>
@@ -809,7 +810,7 @@
 
         <!-- 파싱된 데이터 미리보기 테이블 -->
         <div id="uploadPreviewContainer" style="display:none;margin-top:20px">
-          <h4 style="font-size:15px;margin-bottom:10px">🔎 분석 및 자동 수치화 미리보기</h4>
+          <h4 style="font-size:16.5px;margin-bottom:10px">🔎 분석 및 자동 수치화 미리보기</h4>
           <div class="table-responsive" style="max-height:260px;overflow-y:auto;border:1px solid var(--line);border-radius:6px">
             <table class="data-table">
               <thead>
@@ -845,7 +846,7 @@
       <div class="modal-header">
         <div>
           <h3>학생 명단 엑셀/CSV 일괄 등록</h3>
-          <div style="font-size:13px;color:var(--text-sub)">Wee클래스 또는 교육지원청에서 전달받은 학생 명단을 대량으로 일괄 등록합니다.</div>
+          <div style="font-size:14.5px;color:var(--text-sub);margin-top:3px">Wee클래스 또는 교육지원청에서 전달받은 학생 명단을 대량으로 일괄 등록합니다.</div>
         </div>
         <button class="modal-close" onclick="window.UI.closeModal('modalUploadStudents')">&times;</button>
       </div>
@@ -859,7 +860,7 @@
         </div>
 
         <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:13px;color:var(--text-sub)">표준 양식: 성별, 소속센터, 소속시군, 학교급, 학년, 의뢰경로, 주호소문제, 초기위기도는 <strong>엑셀 드롭다운 목록</strong>에서 선택 가능합니다.</span>
+          <span style="font-size:14px;color:var(--text-sub)">표준 양식: 성별, 소속센터, 소속시군, 학교급, 학년, 의뢰경로, 주호소문제, 초기위기도는 <strong>엑셀 드롭다운 목록</strong>에서 선택 가능합니다.</span>
           <button type="button" id="btnDownloadStudentTemplate" class="btn btn-outline btn-sm">
             📥 표준 엑셀(XLSX) 템플릿 받기 (드롭다운 지원)
           </button>
@@ -867,7 +868,7 @@
 
         <!-- 파싱된 데이터 미리보기 테이블 -->
         <div id="uploadStudentPreviewContainer" style="display:none;margin-top:20px">
-          <h4 style="font-size:15px;margin-bottom:10px">🔎 등록 예정 학생 명단 미리보기 (<span id="uploadStudentCount">0</span>명)</h4>
+          <h4 style="font-size:16.5px;margin-bottom:10px">🔎 등록 예정 학생 명단 미리보기 (<span id="uploadStudentCount">0</span>명)</h4>
           <div class="table-responsive" style="max-height:260px;overflow-y:auto;border:1px solid var(--line);border-radius:6px">
             <table class="data-table">
               <thead>
@@ -900,7 +901,7 @@
        MODAL 5: 모니터링 상담 일지 작성 모달
        ======================================================================== -->
   <div id="modalNewMonitoring" class="modal-backdrop">
-    <div class="modal-dialog">
+    <div class="modal-dialog wide">
       <div class="modal-header">
         <h3>모니터링 및 상담 일지 작성</h3>
         <button class="modal-close" onclick="window.UI.closeModal('modalNewMonitoring')">&times;</button>
@@ -1002,19 +1003,19 @@
         <button class="modal-close" onclick="window.UI.closeModal('modalSupabaseConfig')">&times;</button>
       </div>
       <div class="modal-body">
-        <p style="font-size:14px;color:var(--text-sub);margin-bottom:16px">
+        <p style="font-size:15px;color:var(--text-sub);margin-bottom:16px">
           Supabase 프로젝트의 Project URL과 anon public key를 입력하시면 클라우드 DB와 실시간 동기화됩니다.<br>
           (공란으로 두시면 로컬 데모 모드로 안전하게 작동합니다.)
         </p>
-        <div class="form-field" style="margin-bottom:12px">
+        <div class="form-field" style="margin-bottom:14px">
           <label>Project URL</label>
           <input type="text" id="cfgSupabaseUrl" class="input-control" placeholder="https://your-project.supabase.co">
         </div>
-        <div class="form-field" style="margin-bottom:12px">
+        <div class="form-field" style="margin-bottom:14px">
           <label>Anon Public Key</label>
           <input type="password" id="cfgSupabaseKey" class="input-control" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
         </div>
-        <div style="background:#f8fafc;padding:12px;border-radius:6px;font-size:13px;color:var(--text-sub);border:1px solid var(--line)">
+        <div style="background:#f8fafc;padding:14px;border-radius:6px;font-size:14px;color:var(--text-sub);border:1px solid var(--line)">
           💡 <strong>안내</strong>: <code>sql/schema.sql</code> 파일을 Supabase SQL Editor에 실행하시면 모든 테이블과 초기 경남 18개 시군 데이터가 자동 구축됩니다.
         </div>
       </div>
@@ -1041,7 +1042,7 @@
       <div class="modal-header">
         <div>
           <h3>🗑️ 데이터 휴지통 (Recycle Bin)</h3>
-          <div style="font-size:13px;color:var(--text-sub)">삭제된 학생 프로필 및 심리검사 기록을 7일간 안전하게 보관하며, 언제든 1클릭으로 복구할 수 있습니다.</div>
+          <div style="font-size:14.5px;color:var(--text-sub);margin-top:3px">삭제된 학생 프로필 및 심리검사 기록을 7일간 안전하게 보관하며, 언제든 1클릭으로 복구할 수 있습니다.</div>
         </div>
         <button class="modal-close" onclick="window.UI.closeModal('modalTrashBin')">&times;</button>
       </div>
@@ -1056,7 +1057,7 @@
           </button>
         </div>
 
-        <div style="background:#fef2f2;border:1px solid #fecaca;padding:10px 14px;border-radius:6px;font-size:12.5px;color:#991b1b;margin-bottom:14px">
+        <div style="background:#fef2f2;border:1px solid #fecaca;padding:12px 16px;border-radius:6px;font-size:14px;color:#991b1b;margin-bottom:16px">
           ⏱️ <strong>안내</strong>: 삭제된 항목은 <strong>최대 7일간</strong> 보관된 후 영구 파기됩니다. 복구를 원하시면 <strong>[🔄 복구]</strong> 버튼을 클릭하세요.
         </div>
 

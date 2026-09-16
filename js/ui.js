@@ -113,13 +113,6 @@ window.UI = (function() {
       desc: "Wee클래스·교육청 의뢰 학생 신규 접수 등록, 학교 및 가정 방문 모니터링 상담 일지 작성, 학생 안전망 연계를 전담합니다.",
       autoTab: "clients",
       isEdu: false
-    },
-    admin_edu: {
-      title: "🏛️ 정재훈 장학사 (경상남도교육청 교육복지과)",
-      badge: "경남교육청 장학 / 실적 모니터링 (열람 전용)",
-      desc: "경남 18개 시·군 관할 학교 위기 현황 통계 모니터링 및 교육청 공식 사업실적보고서(CSV) 다운로드 전용 모드입니다. (학생 개인정보 보호 마스킹)",
-      autoTab: "stats",
-      isEdu: true
     }
   };
 
@@ -137,7 +130,7 @@ window.UI = (function() {
         </div>
         <div class="role-banner-desc">${cfg.desc}</div>
       </div>
-      <div style="font-size:12px;opacity:0.8;white-space:nowrap;margin-left:14px;background:rgba(255,255,255,0.4);padding:4px 8px;border-radius:6px">
+      <div style="font-size:13px;opacity:0.85;white-space:nowrap;margin-left:14px;background:rgba(255,255,255,0.4);padding:4px 8px;border-radius:6px">
         시연 중 ⚡
       </div>
     `;

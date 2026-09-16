@@ -38,12 +38,12 @@
           <td>${t.test_date}</td>
           <td>
             <strong>${t.client_name || "이름미기재"}</strong>
-            <div style="font-size:12px;color:var(--text-sub)">${t.client_code || ""}</div>
+            <div style="font-size:13px;color:var(--text-sub)">${t.client_code || ""}</div>
           </td>
           <td><strong style="color:var(--secondary)">${typeName}</strong></td>
           <td>
-            <strong style="font-size:15px">${t.total_score}점</strong>
-            ${t.t_score ? `<span style="font-size:12px;color:var(--text-sub)"> (T:${t.t_score})</span>` : ""}
+            <strong style="font-size:16px">${t.total_score}점</strong>
+            ${t.t_score ? `<span style="font-size:13px;color:var(--text-sub)"> (T:${t.t_score})</span>` : ""}
           </td>
           <td>${verdictBadge}</td>
           <td>${t.examiner || "미기재"}</td>
@@ -91,7 +91,7 @@
         const div = document.createElement("div");
         div.className = "form-field";
         div.innerHTML = `
-          <label style="font-size:12.5px">${sub.name} (최대 ${sub.max}점)</label>
+          <label style="font-size:14px">${sub.name} (최대 ${sub.max}점)</label>
           <input type="number" class="input-control subscale-input" data-key="${sub.key}" min="0" max="${sub.max}" value="0" oninput="window.calcTestScorePreview()">
         `;
         container.appendChild(div);
@@ -131,10 +131,10 @@
     const evalResult = typeDef.evaluate(currentScore, subscores);
 
     previewEl.innerHTML = `
-      <div style="background:#fff;border:1px solid var(--line);border-radius:6px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between">
+      <div style="background:#fff;border:1px solid var(--line);border-radius:6px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
         <div>
-          <span style="font-size:13px;color:var(--text-sub)">자동 수치화 판정 결과:</span>
-          <strong style="margin-left:6px;font-size:15px">${evalResult.label}</strong>
+          <span style="font-size:14.5px;color:var(--text-sub)">자동 수치화 판정 결과:</span>
+          <strong style="margin-left:8px;font-size:16px">${evalResult.label}</strong>
         </div>
         ${window.UI.renderVerdictBadge(evalResult.verdict)}
       </div>

@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // 경상남도교육청 학생정신건강 전담센터 - 데이터 휴지통 및 복구/영구삭제 모듈 (trash.js)
 // ==============================================================================
 
@@ -95,7 +95,7 @@
               <td><strong style="color:var(--text-main)">${s.client_code}</strong></td>
               <td><strong>${s.name}</strong> (${s.gender})</td>
               <td>${s.school_name} (${s.grade}학년)</td>
-              <td style="font-size:12.5px;color:var(--text-sub)">${deletedDateStr}</td>
+              <td style="font-size:14px;color:var(--text-sub)">${deletedDateStr}</td>
               <td>${daysLeftBadge}</td>
               <td style="text-align:center">
                 <div style="display:inline-flex;gap:6px">
@@ -128,11 +128,11 @@
 
           return `
             <tr>
-              <td><strong>${t.client_name || "이름미기재"}</strong> <span style="font-size:12px;color:var(--text-sub)">(${t.client_code || ""})</span></td>
+              <td><strong>${t.client_name || "이름미기재"}</strong> <span style="font-size:13.5px;color:var(--text-sub)">(${t.client_code || ""})</span></td>
               <td><strong style="color:var(--secondary)">${testName}</strong></td>
               <td>${t.total_score}점 ${t.t_score ? `(T:${t.t_score})` : ""}</td>
               <td>${window.UI.renderVerdictBadge(t.verdict)}</td>
-              <td style="font-size:12.5px;color:var(--text-sub)">${deletedDateStr}</td>
+              <td style="font-size:14px;color:var(--text-sub)">${deletedDateStr}</td>
               <td>${daysLeftBadge}</td>
               <td style="text-align:center">
                 <div style="display:inline-flex;gap:6px">
