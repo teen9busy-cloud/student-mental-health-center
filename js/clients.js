@@ -74,16 +74,50 @@
     const reg = window.APP_CONFIG.regions.find(r => r.id === student.region_id);
     const center = window.APP_CONFIG.centers.find(c => c.id === student.center_id);
 
-    // 모달 데이터 채우기
+    // 모달 데이터 채우기 (형태주의 기반 명확한 시각적 그룹핑)
     document.getElementById("detailStudentCode").textContent = student.client_code;
     document.getElementById("detailStudentName").textContent = `${student.name} (${student.gender}, ${student.birth_date || "생일미기재"})`;
-    document.getElementById("detailStudentSchool").textContent = `${student.school_name} ${student.grade}학년 ${student.class_room || ""}`;
-    document.getElementById("detailStudentRegion").textContent = `${reg ? reg.name : ""} (${center ? center.name : ""})`;
-    document.getElementById("detailStudentRisk").innerHTML = window.UI.renderRiskBadge(student.risk_level);
-    document.getElementById("detailStudentReferral").textContent = `${student.referral_source} / 주호소: ${student.main_concern}`;
-    document.getElementById("detailStudentParent").textContent = `${student.parent_relation || "보호자"}: ${student.parent_contact || "연락처 미등록"}`;
-    document.getElementById("detailStudentWorkers").textContent = `담당 사회복지사: ${student.assigned_worker || "미정"} | 담당 임상심리사: ${student.assigned_psych || "미정"}`;
-    document.getElementById("detailStudentNotes").textContent = student.notes || "특이사항 없음";
+
+    // 1. 소속 학교
+    const schoolEl = document.getElementById("detailStudentSchool");
+    if (schoolEl) {
+      schoolEl.innerHTML = `${student.school_name} <span style="font-size:13.5px;color:#64748b;font-weight:normal">(${student.grade}학년 ${student.class_room ? student.class_room + '반' : ''})</span>`;
+    }
+
+    // 2. 지역 및 센터 (기관 풀네임 대신 간결한 센터명 표기)
+    const regionEl = document.getElementById("detailStudentRegion");
+    if (regionEl) {
+      const centerShort = center ? center.name.replace(" 학생정신건강 전담센터", "") : "경남전담센터";
+      regionEl.innerHTML = `<strong>${reg ? reg.name : "경남"}</strong> <span style="color:#64748b;font-size:13px">(${centerShort})</span>`;
+    }
+
+    // 3. 위기도 판정
+    const riskEl = document.getElementById("detailStudentRisk");
+    if (riskEl) riskEl.innerHTML = window.UI.renderRiskBadge(student.risk_level);
+
+    // 4. 주 호소 문제
+    const concernEl = document.getElementById("detailStudentConcern");
+    if (concernEl) concernEl.textContent = student.main_concern || "일반상담";
+
+    // 5. 의뢰 경로
+    const refEl = document.getElementById("detailStudentReferral");
+    if (refEl) refEl.textContent = student.referral_source || "직접의뢰";
+
+    // 6. 보호자 연락처
+    const parentEl = document.getElementById("detailStudentParent");
+    if (parentEl) {
+      parentEl.innerHTML = `<span style="color:#64748b">${student.parent_relation || "보호자"}:</span> <strong>${student.parent_contact || "연락처 미등록"}</strong>`;
+    }
+
+    // 7. 전담 지원팀
+    const workersEl = document.getElementById("detailStudentWorkers");
+    if (workersEl) {
+      workersEl.innerHTML = `복지사: <strong>${student.assigned_worker || "이민호"}</strong> &nbsp;|&nbsp; 심리사: <strong>${student.assigned_psych || "박서연"}</strong>`;
+    }
+
+    // 8. 초기 접수 메모
+    const notesEl = document.getElementById("detailStudentNotes");
+    if (notesEl) notesEl.textContent = student.notes || "특이사항 없음";
 
     const allLogs = student.monitoringLogs || [];
 
