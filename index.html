@@ -651,32 +651,52 @@
         <!-- 탭 1: 전문의 임상 자문 차트 -->
         <div id="paneDetailDoctor" class="detail-subtab-pane">
           <!-- 전문의 작성 폼 (센터장 모드일 때 입력 가능, 타 직군은 안내 배너) -->
-          <div id="doctorConsultationBox" style="background:#f0f7ff;border:1px solid #bfdbfe;border-radius:10px;padding:18px 20px;margin-bottom:20px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-              <strong style="color:#1e40af;font-size:16px;display:flex;align-items:center;gap:6px">
-                🩺 소아청소년정신과 전문의(센터장) 임상 자문 등록
-              </strong>
-              <span class="badge" style="background:#dbeafe;color:#1e40af;font-weight:600">전문의 전용 권한</span>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr auto;gap:12px;margin-bottom:10px">
+          <div id="doctorConsultationBox" style="background:#f8fafc;border:1.5px solid #93c5fd;border-radius:12px;padding:20px 24px;margin-bottom:24px;box-shadow:0 2px 8px rgba(37,99,235,0.06)">
+            <!-- 상단 헤더 영역 -->
+            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #dbeafe;padding-bottom:12px;margin-bottom:16px">
               <div>
-                <label style="display:block;font-size:13.5px;font-weight:600;color:#1e3a8a;margin-bottom:4px">자문 유형 구분</label>
-                <select id="doctorOpinionTypeSelect" class="input-control" style="background:#fff;border-color:#93c5fd;font-size:14.5px">
-                  <option value="OUTPATIENT_LINK">🏥 병원 외래 진료 및 처방 연계</option>
-                  <option value="COMPREHENSIVE_OPINION">🔍 종합 임상 진단 소견</option>
-                  <option value="CRISIS_SAFETY">🛡️ 위기 개입 및 안전계획 지도</option>
-                  <option value="ENVIRONMENT_RECOMMEND">🏫 학교·가정 환경 권고사항</option>
-                </select>
+                <strong style="color:#1e40af;font-size:16.5px;display:flex;align-items:center;gap:8px">
+                  🩺 소아청소년정신과 전문의(센터장) 임상 자문 및 소견서 작성
+                </strong>
+                <div style="font-size:13.5px;color:#3b82f6;margin-top:3px">
+                  내담 학생의 정서행동 특성 및 심리검사 결과를 종합 평가하여 임상 소견을 기록하고 외래진료·치료 연계를 승인합니다.
+                </div>
               </div>
-              <div style="display:flex;align-items:flex-end">
-                <button type="button" class="btn btn-secondary" style="height:42px;padding:0 20px;font-weight:600" onclick="window.saveDoctorOpinion()">
-                  🩺 소견 등록 및 결재
-                </button>
-              </div>
+              <span class="badge" style="background:#dbeafe;color:#1e40af;font-weight:700;font-size:13px;padding:6px 12px;border:1px solid #bfdbfe;white-space:nowrap">
+                전문의 전용 권한
+              </span>
             </div>
-            <div>
-              <label style="display:block;font-size:13.5px;font-weight:600;color:#1e3a8a;margin-bottom:4px">임상 자문 소견 상세</label>
-              <textarea id="doctorOpinionInput" class="input-control" style="background:#fff;border-color:#93c5fd;min-height:80px;font-size:15px;line-height:1.5" placeholder="예: [김진우 센터장 소견] 우울 및 충동 조절 완화를 위해 소아청소년정신과 외래 접수 승인. 학교 Wee클래스 지속 상담 및 자해 방지 안전 계약 체결 권고."></textarea>
+
+            <!-- 자문 유형 구분 -->
+            <div style="margin-bottom:14px">
+              <label for="doctorOpinionTypeSelect" style="display:block;font-size:14px;font-weight:700;color:#1e3a8a;margin-bottom:6px">
+                자문 유형 구분 <span style="color:#ef4444">*</span>
+              </label>
+              <select id="doctorOpinionTypeSelect" class="input-control" style="width:100%;height:44px;background:#ffffff;border:1.5px solid #93c5fd;border-radius:8px;font-size:15px;font-weight:600;color:#1e3a8a;padding:0 14px">
+                <option value="OUTPATIENT_LINK">🏥 병원 외래 진료 및 처방 연계</option>
+                <option value="COMPREHENSIVE_OPINION">🔍 종합 임상 진단 소견</option>
+                <option value="CRISIS_SAFETY">🛡️ 위기 개입 및 안전계획 지도</option>
+                <option value="ENVIRONMENT_RECOMMEND">🏫 학교·가정 환경 권고사항</option>
+              </select>
+            </div>
+
+            <!-- 임상 자문 소견 상세 입력창 (전체 너비 100%, 넉넉한 높이) -->
+            <div style="margin-bottom:16px">
+              <label for="doctorOpinionInput" style="display:block;font-size:14px;font-weight:700;color:#1e3a8a;margin-bottom:6px">
+                임상 자문 소견 상세 <span style="color:#ef4444">*</span>
+              </label>
+              <textarea id="doctorOpinionInput" class="input-control" style="width:100%;box-sizing:border-box;background:#ffffff;border:1.5px solid #93c5fd;border-radius:8px;min-height:140px;padding:14px 16px;font-size:15.5px;line-height:1.65;font-family:inherit;color:#1e293b;resize:vertical" placeholder="예: [김진우 센터장 소견] 우울감 및 충동 조절 완화를 위해 소아청소년정신과 외래 접수 승인. 학교 Wee클래스와 주 1회 상담을 지속하고, 자해 시도 방지를 위한 가정-학교 연계 안전 계약 체결 권고."></textarea>
+            </div>
+
+            <!-- 하단 안내 및 결재 등록 버튼 바 -->
+            <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px dashed #bfdbfe;padding-top:14px;flex-wrap:wrap;gap:12px">
+              <div style="font-size:13.5px;color:#2563eb;display:flex;align-items:center;gap:6px">
+                <span>💡</span>
+                <span>작성된 소견은 전문의 임상 차트에 영구 보관되며, 상담 모니터링 회기 번호는 소모되지 않습니다.</span>
+              </div>
+              <button type="button" class="btn btn-secondary" style="height:44px;padding:0 24px;font-size:15px;font-weight:700;box-shadow:0 2px 4px rgba(26,54,93,0.2);display:inline-flex;align-items:center;gap:8px" onclick="window.saveDoctorOpinion()">
+                🩺 전문의 소견 등록 및 결재 완료
+              </button>
             </div>
           </div>
           <div id="doctorConsultationNotice" style="display:none;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:8px;padding:12px 16px;margin-bottom:18px;color:#64748b;font-size:14px;align-items:center;gap:8px">

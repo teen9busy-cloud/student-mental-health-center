@@ -442,10 +442,18 @@ select.input-control, input.input-control, textarea.input-control {
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   background: #ffffff;
+  font-family: inherit;
   font-size: 15px;
   color: var(--text-main);
   outline: none;
+  box-sizing: border-box;
   transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+textarea.input-control {
+  width: 100%;
+  resize: vertical;
+  line-height: 1.6;
 }
 
 select.input-control:focus, input.input-control:focus, textarea.input-control:focus {
