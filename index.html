@@ -635,34 +635,76 @@
           </div>
         </div>
 
-        <!-- 탭식 하위 뷰 (검사 이력 & 모니터링 일지) -->
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-          <h4 style="font-size:17px">📝 심리검사 수치화 이력</h4>
-          <button class="btn btn-outline btn-sm" onclick="window.openAddTestForCurrentStudent()">+ 새 심리검사 등록</button>
+        <!-- 3단 서브탭 (전문의 임상 자문 차트 / 상담 모니터링 일지 / 심리검사 수치화) -->
+        <div style="display:flex;border-bottom:2px solid var(--line);margin-bottom:20px;gap:8px" role="tablist">
+          <button type="button" id="btnDetailTabDoctor" class="subtab-btn active" onclick="window.switchStudentDetailSubTab('doctor')" style="padding:10px 18px;font-size:15px;font-weight:600;background:none;border:none;border-bottom:3px solid var(--primary);color:var(--primary);cursor:pointer;display:flex;align-items:center;gap:6px">
+            🩺 전문의 임상 자문 차트 <span id="detailDoctorCount" class="badge" style="background:#eff6ff;color:#1e40af;font-size:12px">0</span>
+          </button>
+          <button type="button" id="btnDetailTabLogs" class="subtab-btn" onclick="window.switchStudentDetailSubTab('logs')" style="padding:10px 18px;font-size:15px;font-weight:600;background:none;border:none;border-bottom:3px solid transparent;color:var(--text-sub);cursor:pointer;display:flex;align-items:center;gap:6px">
+            📋 상담 모니터링 일지 <span id="detailLogCount" class="badge" style="background:#f1f5f9;color:var(--text-sub);font-size:12px">0</span>
+          </button>
+          <button type="button" id="btnDetailTabTests" class="subtab-btn" onclick="window.switchStudentDetailSubTab('tests')" style="padding:10px 18px;font-size:15px;font-weight:600;background:none;border:none;border-bottom:3px solid transparent;color:var(--text-sub);cursor:pointer;display:flex;align-items:center;gap:6px">
+            📝 심리검사 수치화 <span id="detailTestCount" class="badge" style="background:#f1f5f9;color:var(--text-sub);font-size:12px">0</span>
+          </button>
         </div>
-        <div id="detailTestList" style="margin-bottom:26px"></div>
 
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-          <h4 style="font-size:17px">📋 모니터링 & 전문의 자문 일지</h4>
-          <button class="btn btn-outline btn-sm" onclick="window.openAddLogForCurrentStudent()">+ 새 모니터링 작성</button>
+        <!-- 탭 1: 전문의 임상 자문 차트 -->
+        <div id="paneDetailDoctor" class="detail-subtab-pane">
+          <!-- 전문의 작성 폼 (센터장 모드일 때 입력 가능, 타 직군은 안내 배너) -->
+          <div id="doctorConsultationBox" style="background:#f0f7ff;border:1px solid #bfdbfe;border-radius:10px;padding:18px 20px;margin-bottom:20px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <strong style="color:#1e40af;font-size:16px;display:flex;align-items:center;gap:6px">
+                🩺 소아청소년정신과 전문의(센터장) 임상 자문 등록
+              </strong>
+              <span class="badge" style="background:#dbeafe;color:#1e40af;font-weight:600">전문의 전용 권한</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr auto;gap:12px;margin-bottom:10px">
+              <div>
+                <label style="display:block;font-size:13.5px;font-weight:600;color:#1e3a8a;margin-bottom:4px">자문 유형 구분</label>
+                <select id="doctorOpinionTypeSelect" class="input-control" style="background:#fff;border-color:#93c5fd;font-size:14.5px">
+                  <option value="OUTPATIENT_LINK">🏥 병원 외래 진료 및 처방 연계</option>
+                  <option value="COMPREHENSIVE_OPINION">🔍 종합 임상 진단 소견</option>
+                  <option value="CRISIS_SAFETY">🛡️ 위기 개입 및 안전계획 지도</option>
+                  <option value="ENVIRONMENT_RECOMMEND">🏫 학교·가정 환경 권고사항</option>
+                </select>
+              </div>
+              <div style="display:flex;align-items:flex-end">
+                <button type="button" class="btn btn-secondary" style="height:42px;padding:0 20px;font-weight:600" onclick="window.saveDoctorOpinion()">
+                  🩺 소견 등록 및 결재
+                </button>
+              </div>
+            </div>
+            <div>
+              <label style="display:block;font-size:13.5px;font-weight:600;color:#1e3a8a;margin-bottom:4px">임상 자문 소견 상세</label>
+              <textarea id="doctorOpinionInput" class="input-control" style="background:#fff;border-color:#93c5fd;min-height:80px;font-size:15px;line-height:1.5" placeholder="예: [김진우 센터장 소견] 우울 및 충동 조절 완화를 위해 소아청소년정신과 외래 접수 승인. 학교 Wee클래스 지속 상담 및 자해 방지 안전 계약 체결 권고."></textarea>
+            </div>
+          </div>
+          <div id="doctorConsultationNotice" style="display:none;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:8px;padding:12px 16px;margin-bottom:18px;color:#64748b;font-size:14px;align-items:center;gap:8px">
+            ℹ️ 현재 모드에서는 전문의 자문 내역 열람만 가능합니다. (신규 소견 작성은 상단 역할 전환에서 <strong>센터장(의사) 모드</strong> 선택 시 가능)
+          </div>
+
+          <div style="font-weight:600;font-size:15px;color:var(--text-sub);margin-bottom:10px">
+            기록된 전문의 임상 자문 내역
+          </div>
+          <div id="detailDoctorConsultList"></div>
         </div>
-        <div id="detailLogList"></div>
 
-        <!-- 센터장(소아청소년정신과 전문의) 전용 자문 작성 섹션 -->
-        <div id="doctorConsultationBox" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:18px;margin-top:22px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <strong style="color:#1e40af;font-size:15.5px">🩺 소아청소년정신과 전문의(센터장) 임상 자문 및 처방·진료 연계</strong>
-            <span class="badge" style="background:#dbeafe;color:#1e40af">전문의 전용 권한</span>
+        <!-- 탭 2: 상담 모니터링 일지 -->
+        <div id="paneDetailLogs" class="detail-subtab-pane" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <span style="font-size:14.5px;color:var(--text-sub)">사회복지사 및 임상심리사가 진행한 회기별 상담·모니터링 일지입니다.</span>
+            <button class="btn btn-primary btn-sm" onclick="window.openAddLogForCurrentStudent()">+ 새 모니터링 일지 작성</button>
           </div>
-          <div style="font-size:14px;color:#1e3a8a;margin-bottom:10px">
-            본 학생의 정서행동특성 및 심리검사 결과를 종합 검토하여 임상 소견을 작성하고 병원 외래 진료 연계를 승인합니다.
+          <div id="detailLogList"></div>
+        </div>
+
+        <!-- 탭 3: 심리검사 수치화 이력 -->
+        <div id="paneDetailTests" class="detail-subtab-pane" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <span style="font-size:14.5px;color:var(--text-sub)">실시된 심리검사 척도별 결과 및 원본 PDF 파일 보관함입니다.</span>
+            <button class="btn btn-primary btn-sm" onclick="window.openAddTestForCurrentStudent()">+ 새 심리검사 등록</button>
           </div>
-          <textarea id="doctorOpinionInput" class="input-control" style="background:#fff;border-color:#93c5fd;min-height:75px" placeholder="예: [김진우 센터장 소견] 충동성 및 우울 완화를 위한 소아청소년정신과 외래 접수 승인. 학교 Wee클래스와 주 1회 상담 연계 지속 권고."></textarea>
-          <div style="display:flex;justify-content:flex-end;margin-top:8px">
-            <button type="button" class="btn btn-secondary btn-sm" onclick="window.saveDoctorOpinion()">
-              🩺 전문의 소견 등록 및 결재 완료
-            </button>
-          </div>
+          <div id="detailTestList"></div>
         </div>
       </div>
       <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center">

@@ -229,6 +229,13 @@ window.APP_CONFIG = {
     PHONE: { label: "전화/화상 모니터링", icon: "📞" },
     VISIT_SCHOOL: { label: "학교 방문(Wee클래스 연계)", icon: "🏫" },
     VISIT_HOME: { label: "가정 방문", icon: "🏠" },
-    HOSPITAL_LINK: { label: "병원 외래 진료 연계", icon: "🏥" }
-  }
+    HOSPITAL_LINK: { label: "병원 외래 진료 연계", icon: "🏥" },
+    DOCTOR_OPINION: { label: "전문의 임상 자문", icon: "🩺" }
+  },
+  doctorOpinionTypes: [
+    { id: "OUTPATIENT_LINK", label: "병원 외래 진료 및 처방 연계", icon: "🏥" },
+    { id: "COMPREHENSIVE_OPINION", label: "종합 임상 진단 소견", icon: "🔍" },
+    { id: "CRISIS_SAFETY", label: "위기 개입 및 안전계획 지도", icon: "🛡️" },
+    { id: "ENVIRONMENT_RECOMMEND", label: "학교·가정 환경 권고사항", icon: "🏫" }
+  ]
 };

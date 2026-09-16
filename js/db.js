@@ -648,6 +648,45 @@ window.DB = (function() {
       return record;
     },
 
+    // 모니터링 일지 / 전문의 자문 삭제
+    deleteMonitoringLog: async function(id) {
+      if (isSupabaseMode && supabaseClient) {
+        try {
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+          let q = supabaseClient.from("smhc_monitoring_logs").delete();
+          if (isUuid) q = q.eq("id", id);
+          await q;
+        } catch (e) {
+          console.warn("[DB] Supabase 일지 삭제 오류:", e);
+        }
+      }
+      const data = getLocalData();
+      data.monitoringLogs = (data.monitoringLogs || []).filter(item => item.id !== id);
+      saveLocalData(data);
+      return true;
+    },
+
+    // 특정 모니터링 일지의 전문의 자문(지도 소견) 갱신
+    updateMonitoringLogDoctorOpinion: async function(id, doctorOpinion) {
+      if (isSupabaseMode && supabaseClient) {
+        try {
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+          if (isUuid) {
+            await supabaseClient.from("smhc_monitoring_logs").update({ doctor_opinion: doctorOpinion }).eq("id", id);
+          }
+        } catch (e) {
+          console.warn("[DB] Supabase 일지 자문 업데이트 오류:", e);
+        }
+      }
+      const data = getLocalData();
+      const target = (data.monitoringLogs || []).find(item => item.id === id);
+      if (target) {
+        target.doctor_opinion = doctorOpinion;
+        saveLocalData(data);
+      }
+      return true;
+    },
+
     // 종합 통계 산출
     getAggregatedStats: async function(centerId = "all") {
       const students = await this.getClients(centerId !== "all" ? { center_id: centerId } : {});

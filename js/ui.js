@@ -159,6 +159,15 @@ window.UI = (function() {
       if (cfg.autoTab) {
         switchTab(cfg.autoTab);
       }
+
+      // 학생 상세 모달이 열려있다면 역할 변경에 맞춰 동적 갱신
+      const modal = document.getElementById("modalStudentDetail");
+      if (modal && modal.classList.contains("active") && window.getSelectedStudentId) {
+        const selId = window.getSelectedStudentId();
+        if (selId && window.viewStudentDetail) {
+          window.viewStudentDetail(selId);
+        }
+      }
     }
   }
 

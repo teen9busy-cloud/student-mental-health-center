@@ -85,11 +85,124 @@
     document.getElementById("detailStudentWorkers").textContent = `담당 사회복지사: ${student.assigned_worker || "미정"} | 담당 임상심리사: ${student.assigned_psych || "미정"}`;
     document.getElementById("detailStudentNotes").textContent = student.notes || "특이사항 없음";
 
-    // 심리검사 내역 렌더링
+    const allLogs = student.monitoringLogs || [];
+
+    // 전문의 자문 차트 목록과 상담 모니터링 일지 분리
+    const isDoctorConsult = (l) => {
+      if (l.contact_type === "DOCTOR_OPINION") return true;
+      if (l.session_summary && l.session_summary.includes("전문의 자문 결재")) return true;
+      if (l.doctor_opinion && (!l.student_status || l.student_status.includes("전문의 종합")) && (!l.intervention_details || l.intervention_details.includes("병원 외래 진료 연계"))) return true;
+      return false;
+    };
+
+    const doctorConsultations = allLogs.filter(isDoctorConsult);
+    const counselingLogs = allLogs.filter(l => !isDoctorConsult(l));
+
+    // 탭 카운트 배지 갱신
+    const docCountEl = document.getElementById("detailDoctorCount");
+    const logCountEl = document.getElementById("detailLogCount");
+    const testCountEl = document.getElementById("detailTestCount");
+    if (docCountEl) docCountEl.textContent = doctorConsultations.length;
+    if (logCountEl) logCountEl.textContent = counselingLogs.length;
+    if (testCountEl) testCountEl.textContent = (student.tests || []).length;
+
+    // 1. 전문의 임상 자문 차트 렌더링
+    const doctorConsultListEl = document.getElementById("detailDoctorConsultList");
+    if (doctorConsultListEl) {
+      if (doctorConsultations.length === 0) {
+        doctorConsultListEl.innerHTML = `
+          <div style="text-align:center;padding:24px 16px;color:var(--text-sub);background:#f8fafc;border-radius:8px;border:1px dashed var(--line)">
+            기록된 전문의 임상 자문 소견이 없습니다. 상단 등록 폼에서 새로운 자문을 작성할 수 있습니다.
+          </div>`;
+      } else {
+        doctorConsultListEl.innerHTML = doctorConsultations.map(c => {
+          return `
+            <div style="background:#fff;border:1px solid #bfdbfe;border-left:4px solid #2563eb;border-radius:8px;padding:16px 18px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.04)">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span class="badge" style="background:#eff6ff;color:#1e40af;font-size:13.5px;font-weight:600;padding:4px 10px;border:1px solid #bfdbfe">
+                    ${c.session_summary || "🩺 전문의 임상 자문"}
+                  </span>
+                  <span style="font-size:14px;color:var(--text-sub)">자문일시: ${c.session_date}</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="font-size:13.5px;color:#1e3a8a;background:#f0f9ff;padding:3px 8px;border-radius:4px">
+                    🩺 ${c.worker || "소아청소년정신과 전문의"}
+                  </span>
+                  <button type="button" class="btn btn-outline btn-sm" style="color:#ef4444;border-color:#fca5a5;padding:2px 8px;font-size:12px" title="자문 삭제" onclick="window.deleteDoctorConsultation('${c.id}')">
+                    🗑️ 삭제
+                  </button>
+                </div>
+              </div>
+              <div style="font-size:15px;line-height:1.6;color:#1e293b;background:#f8fafc;padding:12px 14px;border-radius:6px;border:1px solid #e2e8f0;white-space:pre-wrap">
+                ${c.doctor_opinion || c.session_summary || "자문 내용 없음"}
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+    }
+
+    // 2. 모니터링 상담 일지 렌더링
+    const logListEl = document.getElementById("detailLogList");
+    if (logListEl) {
+      if (counselingLogs.length === 0) {
+        logListEl.innerHTML = `<div style="text-align:center;padding:24px 16px;color:var(--text-sub);background:#f8fafc;border-radius:8px;border:1px dashed var(--line)">등록된 모니터링 상담 일지가 없습니다.</div>`;
+      } else {
+        const sortedLogs = [...counselingLogs].sort((a, b) => new Date(b.session_date) - new Date(a.session_date));
+        const totalSessions = sortedLogs.length;
+
+        logListEl.innerHTML = `
+          <div class="timeline">
+            ${sortedLogs.map((l, idx) => {
+              const sessionNo = l.session_no || (totalSessions - idx);
+              const cType = window.APP_CONFIG.contactTypes[l.contact_type] || { label: l.contact_type || "상담 모니터링", icon: "📝" };
+              const currentRole = window.UI.getCurrentRole();
+              const isDoctor = currentRole.role === "DIRECTOR";
+
+              return `
+                <div class="timeline-item">
+                  <div class="timeline-dot"></div>
+                  <div class="timeline-content">
+                    <div class="timeline-header" style="font-size:14px;margin-bottom:6px">
+                      <strong>${cType.icon} ${cType.label} (제${sessionNo}회기) - ${l.session_date}</strong>
+                      <div style="display:flex;align-items:center;gap:6px">
+                        <span>작성: ${l.worker}</span>
+                        <button type="button" class="btn btn-outline btn-sm" style="color:#ef4444;border-color:#fca5a5;padding:1px 6px;font-size:11px" title="일지 삭제" onclick="window.deleteCounselingLog('${l.id}')">🗑️</button>
+                      </div>
+                    </div>
+                    <div style="font-size:15.5px;font-weight:600;margin-bottom:6px;color:var(--text-main)">${l.session_summary || "상담 진행"}</div>
+                    ${l.student_status ? `<div style="font-size:14px;color:var(--text-sub);margin-bottom:4px"><strong>학생 상태:</strong> ${l.student_status}</div>` : ""}
+                    ${l.intervention_details ? `<div style="font-size:14px;color:var(--text-sub);margin-bottom:6px"><strong>개입 내용:</strong> ${l.intervention_details}</div>` : ""}
+                    ${l.doctor_opinion ? `
+                      <div style="font-size:14px;background:#eff6ff;color:#1e40af;padding:10px 12px;border-radius:6px;border:1px solid #bfdbfe;margin-top:8px;line-height:1.5">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                          <strong>🩺 전문의 회기 지도 소견</strong>
+                          ${isDoctor ? `<button type="button" class="btn btn-outline btn-sm" style="font-size:11px;padding:1px 6px;color:#2563eb" onclick="window.promptSessionDoctorOpinion('${l.id}', '${encodeURIComponent(l.doctor_opinion)}')">수정</button>` : ""}
+                        </div>
+                        <div>${l.doctor_opinion}</div>
+                      </div>
+                    ` : (isDoctor ? `
+                      <div style="margin-top:8px">
+                        <button type="button" class="btn btn-outline btn-sm" style="font-size:12px;padding:3px 8px;color:#2563eb;border-color:#93c5fd" onclick="window.promptSessionDoctorOpinion('${l.id}', '')">
+                          🩺 이 회기에 전문의 지도 자문 달기
+                        </button>
+                      </div>
+                    ` : "")}
+                  </div>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        `;
+      }
+    }
+
+    // 3. 심리검사 내역 렌더링
     const testListEl = document.getElementById("detailTestList");
     if (testListEl) {
       if (!student.tests || student.tests.length === 0) {
-        testListEl.innerHTML = `<div style="text-align:center;padding:16px;color:var(--text-sub);background:#f8fafc;border-radius:6px">등록된 심리검사 내역이 없습니다.</div>`;
+        testListEl.innerHTML = `<div style="text-align:center;padding:24px 16px;color:var(--text-sub);background:#f8fafc;border-radius:8px;border:1px dashed var(--line)">등록된 심리검사 내역이 없습니다.</div>`;
       } else {
         testListEl.innerHTML = student.tests.map(t => {
           const testDef = window.APP_CONFIG.testTypes[t.test_type];
@@ -125,51 +238,54 @@
       }
     }
 
-    // 모니터링 상담 일지 렌더링
-    const logListEl = document.getElementById("detailLogList");
-    if (logListEl) {
-      if (!student.monitoringLogs || student.monitoringLogs.length === 0) {
-        logListEl.innerHTML = `<div style="text-align:center;padding:16px;color:var(--text-sub);background:#f8fafc;border-radius:6px">등록된 모니터링 상담 일지가 없습니다.</div>`;
-      } else {
-        logListEl.innerHTML = `
-          <div class="timeline">
-            ${student.monitoringLogs.map(l => {
-              const cType = window.APP_CONFIG.contactTypes[l.contact_type] || { label: l.contact_type, icon: "📝" };
-              return `
-                <div class="timeline-item">
-                  <div class="timeline-dot"></div>
-                  <div class="timeline-content">
-                    <div class="timeline-header" style="font-size:14px;margin-bottom:6px">
-                      <strong>${cType.icon} ${cType.label} (제${l.session_no || 1}회기) - ${l.session_date}</strong>
-                      <span>작성: ${l.worker}</span>
-                    </div>
-                    <div style="font-size:15px;font-weight:600;margin-bottom:6px">${l.session_summary}</div>
-                    ${l.student_status ? `<div style="font-size:14px;color:var(--text-sub);margin-bottom:4px"><strong>상태:</strong> ${l.student_status}</div>` : ""}
-                    ${l.intervention_details ? `<div style="font-size:14px;color:var(--text-sub);margin-bottom:6px"><strong>개입:</strong> ${l.intervention_details}</div>` : ""}
-                    ${l.doctor_opinion ? `<div style="font-size:14px;background:#eff6ff;color:#1e40af;padding:10px 12px;border-radius:6px;border:1px solid #bfdbfe;margin-top:6px;line-height:1.5"><strong>전문의 자문:</strong> ${l.doctor_opinion}</div>` : ""}
-                  </div>
-                </div>
-              `;
-            }).join("")}
-          </div>
-        `;
-      }
-    }
-
-    // 센터장(전문의) 전용 자문 박스 표시 제어
+    // 전문의 작성 폼 권한 제어
+    const currentRole = window.UI.getCurrentRole();
+    const isDoctor = currentRole.role === "DIRECTOR";
     const consultBox = document.getElementById("doctorConsultationBox");
-    if (consultBox) {
-      const isDoctor = window.UI.getCurrentRole().role === "DIRECTOR";
-      consultBox.style.display = isDoctor ? "block" : "none";
-    }
+    const consultNotice = document.getElementById("doctorConsultationNotice");
+    if (consultBox) consultBox.style.display = isDoctor ? "block" : "none";
+    if (consultNotice) consultNotice.style.display = isDoctor ? "none" : "flex";
+
+    // 기본 서브탭 자동 활성화
+    let defaultTab = "doctor";
+    if (currentRole.role === "PSYCHOLOGIST") defaultTab = "tests";
+    else if (currentRole.role === "SOCIAL_WORKER") defaultTab = "logs";
+
+    switchStudentDetailSubTab(window._currentDetailSubTab || defaultTab);
 
     window.UI.openModal("modalStudentDetail");
   }
 
-  // 센터장(의사) 모드에서 학생 상세창의 전문의 자문 소견 저장
+  // 학생 상세 3단 서브탭 전환
+  function switchStudentDetailSubTab(tabName) {
+    window._currentDetailSubTab = tabName;
+    const tabs = [
+      { id: "doctor", btnId: "btnDetailTabDoctor", paneId: "paneDetailDoctor" },
+      { id: "logs", btnId: "btnDetailTabLogs", paneId: "paneDetailLogs" },
+      { id: "tests", btnId: "btnDetailTabTests", paneId: "paneDetailTests" }
+    ];
+
+    tabs.forEach(t => {
+      const btn = document.getElementById(t.btnId);
+      const pane = document.getElementById(t.paneId);
+      const isActive = t.id === tabName;
+      if (btn) {
+        btn.style.borderBottom = isActive ? "3px solid var(--primary)" : "3px solid transparent";
+        btn.style.color = isActive ? "var(--primary)" : "var(--text-sub)";
+        if (isActive) btn.classList.add("active");
+        else btn.classList.remove("active");
+      }
+      if (pane) {
+        pane.style.display = isActive ? "block" : "none";
+      }
+    });
+  }
+
+  // 센터장(의사) 모드에서 학생 상세창의 전문의 자문 소견 저장 (독립 차트)
   async function saveDoctorOpinion() {
     if (!selectedStudentId) return;
     const inputEl = document.getElementById("doctorOpinionInput");
+    const typeSelectEl = document.getElementById("doctorOpinionTypeSelect");
     const opinionText = inputEl ? inputEl.value.trim() : "";
     if (!opinionText) {
       window.UI.showToast("전문의 자문 소견 내용을 입력해 주세요.", "warn");
@@ -179,26 +295,74 @@
     const student = await window.DB.getClientById(selectedStudentId);
     if (!student) return;
 
+    const typeId = typeSelectEl ? typeSelectEl.value : "OUTPATIENT_LINK";
+    const typeObj = (window.APP_CONFIG.doctorOpinionTypes || []).find(t => t.id === typeId);
+    const typeLabel = typeObj ? `${typeObj.icon} ${typeObj.label}` : "🩺 전문의 임상 자문";
+
     const newLog = {
       client_id: student.id,
       client_name: student.name,
       session_date: new Date().toISOString().split("T")[0],
-      session_no: (student.monitoringLogs ? student.monitoringLogs.length : 0) + 1,
-      contact_type: "HOSPITAL_LINK",
+      session_no: 0, // 자문 차트는 상담 회기를 소모하지 않음
+      contact_type: "DOCTOR_OPINION",
       current_risk: student.risk_level,
       worker: window.UI.getCurrentRole().name,
-      session_summary: "[소아청소년정신과 전문의 자문 결재 완료]",
-      student_status: "전문의 종합 임상 진단 검토 완료",
-      intervention_details: "병원 외래 진료 연계 및 맞춤형 집중 모니터링 승인",
+      session_summary: typeLabel,
+      student_status: "", // 무의미한 자동 생성 더미 텍스트 배제
+      intervention_details: "", // 무의미한 자동 생성 더미 텍스트 배제
       doctor_opinion: opinionText
     };
 
     try {
       await window.DB.addMonitoringLog(newLog);
-      window.UI.showToast("전문의 자문 소견이 Supabase DB에 성공적으로 결재 등록되었습니다!", "success");
-      inputEl.value = "";
-      viewStudentDetail(selectedStudentId);
+      window.UI.showToast("전문의 자문 소견이 임상 차트에 성공적으로 등록되었습니다!", "success");
+      if (inputEl) inputEl.value = "";
+      window._currentDetailSubTab = "doctor";
+      await viewStudentDetail(selectedStudentId);
       if (window.renderDashboard) window.renderDashboard();
+    } catch(e) {
+      console.error(e);
+      window.UI.showToast("자문 저장 중 오류가 발생했습니다.", "error");
+    }
+  }
+
+  // 전문의 임상 자문 단일 삭제
+  async function deleteDoctorConsultation(id) {
+    if (!confirm("전문의 임상 자문 기록을 삭제하시겠습니까?")) return;
+    try {
+      await window.DB.deleteMonitoringLog(id);
+      window.UI.showToast("전문의 자문 기록이 삭제되었습니다.", "success");
+      await viewStudentDetail(selectedStudentId);
+      if (window.renderDashboard) window.renderDashboard();
+    } catch(e) {
+      console.error(e);
+      window.UI.showToast("자문 삭제 중 오류가 발생했습니다.", "error");
+    }
+  }
+
+  // 상담 모니터링 일지 단일 삭제
+  async function deleteCounselingLog(id) {
+    if (!confirm("상담 모니터링 일지를 삭제하시겠습니까?")) return;
+    try {
+      await window.DB.deleteMonitoringLog(id);
+      window.UI.showToast("상담 모니터링 일지가 삭제되었습니다.", "success");
+      await viewStudentDetail(selectedStudentId);
+      if (window.renderDashboard) window.renderDashboard();
+    } catch(e) {
+      console.error(e);
+      window.UI.showToast("일지 삭제 중 오류가 발생했습니다.", "error");
+    }
+  }
+
+  // 특정 상담 회기에 전문의 지도 자문 달기 / 수정
+  async function promptSessionDoctorOpinion(logId, encodedCurrentText) {
+    const currentText = encodedCurrentText ? decodeURIComponent(encodedCurrentText) : "";
+    const newText = prompt("해당 회기 상담에 대한 소아청소년정신과 전문의 지도 자문을 입력하세요:", currentText);
+    if (newText === null) return;
+    try {
+      await window.DB.updateMonitoringLogDoctorOpinion(logId, newText.trim());
+      window.UI.showToast("회기별 전문의 지도 자문이 저장되었습니다.", "success");
+      await viewStudentDetail(selectedStudentId);
     } catch(e) {
       console.error(e);
       window.UI.showToast("자문 저장 중 오류가 발생했습니다.", "error");
@@ -991,6 +1155,10 @@
   window.renderClientsList = renderClientsList;
   window.viewStudentDetail = viewStudentDetail;
   window.saveDoctorOpinion = saveDoctorOpinion;
+  window.switchStudentDetailSubTab = switchStudentDetailSubTab;
+  window.deleteDoctorConsultation = deleteDoctorConsultation;
+  window.deleteCounselingLog = deleteCounselingLog;
+  window.promptSessionDoctorOpinion = promptSessionDoctorOpinion;
   window.openAddTestForCurrentStudent = openAddTestForCurrentStudent;
   window.openAddLogForCurrentStudent = openAddLogForCurrentStudent;
   window.getSelectedStudentId = () => selectedStudentId;
